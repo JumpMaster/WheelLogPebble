@@ -1,0 +1,67 @@
+{
+    "author": "JumpMaster",
+    "dependencies": {},
+    "keywords": [],
+    "name": "kingsongstats",
+    "pebble": {
+        "capabilities": [
+            ""
+        ],
+        "displayName": "KingSongStats",
+        "enableMultiJS": true,
+        "messageKeys": [
+            "speed",
+            "battery",
+            "temperature",
+            "fan_is_on"
+        ],
+        "projectType": "native",
+        "resources": {
+            "media": [
+                {
+                    "file": "images/ic_toys_white_18dp_2x.png",
+                    "name": "IMAGE_TEMP",
+                    "targetPlatforms": null,
+                    "type": "bitmap"
+                },
+                {
+                    "file": "images/ic_battery_full_white_18dp_2x.png",
+                    "name": "IMAGE_BATTERY",
+                    "targetPlatforms": null,
+                    "type": "bitmap"
+                },
+                {
+                    "file": "images/ic_battery_alert_white_18dp_1x.png",
+                    "name": "IMAGE_BATTERY_ALERT",
+                    "targetPlatforms": null,
+                    "type": "bitmap"
+                },
+                {
+                    "characterRegex": "[0-9]",
+                    "file": "fonts/SF Square Head Bold.ttf",
+                    "name": "FONT_SQUARE_50",
+                    "targetPlatforms": null,
+                    "type": "font"
+                },
+                {
+                    "file": "fonts/SF Square Head Bold.ttf",
+                    "name": "FONT_SQUARE_20",
+                    "targetPlatforms": null,
+                    "trackingAdjust": 1,
+                    "type": "font"
+                }
+            ]
+        },
+        "sdkVersion": "3",
+        "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk"
+        ],
+        "uuid": "185c8ae9-7e72-451a-a1c7-8f1e81df9a3d",
+        "watchapp": {
+            "watchface": false
+        }
+    },
+    "version": "1.0.0"
+}
