@@ -1,43 +1,55 @@
 #include <pebble.h>
-#include <inttypes.h>
 
 #define KEY_SPEED  0
 #define KEY_BATTERY  1
 #define KEY_TEMPERATURE  2
 #define KEY_FAN_STATE  3
+#define KEY_BT_STATE  4
 
 
-Window *window;
+static Window *window;
 
-TextLayer *text_layer_speed;
-TextLayer *text_layer_mph;
-TextLayer *text_layer_battery;
-TextLayer *text_layer_temperature;
+static TextLayer *text_layer_speed;
+static TextLayer *text_layer_mph;
+static TextLayer *text_layer_battery;
+static TextLayer *text_layer_temperature;
 
 static Layer *arc_layer;
 AppTimer *graphics_timer;
 static BitmapLayer *battery_bitmap_layer;
 static BitmapLayer *temperature_bitmap_layer;
+static BitmapLayer *bt_bitmap_layer;
 
 static GBitmap *battery_bitmap;
 static GBitmap *temperature_bitmap;
+static GBitmap *bt_bitmap;
+
+bool has_vibrated = false;
+int vibrate_speed = 200;
+static VibePattern vibe = {
+  		.durations = (uint32_t[]) { 300, 150, 300, 150, 500 },
+		.num_segments = 5,
+};
 
 int speed = 1;
 int battery = 1;
 int temperature = 1;
-int fan_state = 0;
+int fan_state = 1;
+int bt_state = 1;
 
 int new_speed = 0;
 int new_battery = 99;
 int new_temperature = 20;
 int new_fan_state = 0;
+int new_bt_state = 0;
 
 char charSpeed[3] = "";
 char charBattery[5] = "";
-char charTemperature[4] = "";
+char charTemperature[5] = "";
 
-GFont font_square_50;
-GFont font_square_20;
+static GFont font_square_50;
+static GFont font_square_20;
+
 
 int32_t angle_start;
 int32_t angle_end;
@@ -69,10 +81,20 @@ static void update_display() {
 	
 	if (new_speed != speed) {
 		speed = new_speed;
+		
+		if (!has_vibrated && speed >= vibrate_speed)
+		{
+			has_vibrated = true;
+			vibes_enqueue_custom_pattern(vibe);
+		}
+		else if (has_vibrated && speed < vibrate_speed)
+			has_vibrated = false;
 
 		target_angle = ((speed*125)/100)+235;
 
-		if (target_angle > 485)
+		if (target_angle < 235)
+			target_angle = 235;
+		else if (target_angle > 485)
 			target_angle = 485;
 
 		snprintf(charSpeed, 3, "%02d", speed/10);
@@ -82,10 +104,17 @@ static void update_display() {
 	}
 	
 	if (new_battery != battery) {
-		battery = new_battery > 100 ? 100 : new_battery;
+		if (new_battery > 100)
+			new_battery = 100;
+		else if (new_battery < 0)
+			new_battery = 0;
+			
+		battery = new_battery;
 		snprintf(charBattery, 5, "%d%%", battery);
 		text_layer_set_text(text_layer_battery, charBattery);
 		
+		gbitmap_destroy(battery_bitmap);
+
 		if (battery > 90)
 			battery_bitmap = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_BATTERY_100);
 		else if (battery > 80)
@@ -113,13 +142,13 @@ static void update_display() {
 	
 	if (new_temperature != temperature) {
 		temperature = new_temperature;
-		snprintf(charTemperature, 4, "%dC", temperature);
+		snprintf(charTemperature, 5, "%dC", temperature);
 		text_layer_set_text(text_layer_temperature, charTemperature);
 	}
 	
 	if (fan_state != new_fan_state) {
-		APP_LOG(APP_LOG_LEVEL_INFO, "FAN = %d", new_fan_state);
 		fan_state = new_fan_state;
+		gbitmap_destroy(temperature_bitmap);
 		if (fan_state > 0)
 			temperature_bitmap = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_TEMP_RED);
 		else
@@ -127,6 +156,15 @@ static void update_display() {
 		
 		bitmap_layer_set_compositing_mode(temperature_bitmap_layer, GCompOpSet);
 		bitmap_layer_set_bitmap(temperature_bitmap_layer, temperature_bitmap);
+	}
+	
+	if (bt_state != new_bt_state) {
+		bt_state = new_bt_state;
+
+		if (bt_state > 0)
+			layer_set_hidden(bitmap_layer_get_layer(bt_bitmap_layer), true);
+		else
+			layer_set_hidden(bitmap_layer_get_layer(bt_bitmap_layer), false);
 	}
 }
 
@@ -164,6 +202,7 @@ static void received_handler(DictionaryIterator *iter, void *context) {
 	Tuple *temperature_tuple = dict_find(iter, KEY_TEMPERATURE);
 	Tuple *battery_tuple = dict_find(iter, KEY_BATTERY);
 	Tuple *fan_state_tuple = dict_find(iter, KEY_FAN_STATE);
+	Tuple *bt_state_tuple = dict_find(iter, KEY_BT_STATE);
 	
 	if(speed_tuple)
 		new_speed = speed_tuple->value->int32;
@@ -177,6 +216,10 @@ static void received_handler(DictionaryIterator *iter, void *context) {
 	if (fan_state_tuple)
 		new_fan_state = fan_state_tuple->value->int32;
 	
+	if (bt_state_tuple)
+		new_bt_state = bt_state_tuple->value->int32;
+
+// 	APP_LOG(APP_LOG_LEVEL_INFO, "SPEED = %d", new_speed);
 	update_display();
 }
 
@@ -234,34 +277,33 @@ void handle_init(void) {
 	layer_add_child(window_get_root_layer(window), text_layer_get_layer(text_layer_mph));
  	text_layer_set_text(text_layer_mph, "MPH");
 	
-	text_layer_battery = text_layer_create(GRect(69, 143, 70, 20));
-	text_layer_set_text_alignment(text_layer_battery, GTextAlignmentRight);
+	text_layer_battery = text_layer_create(GRect(72, 143, 72, 20));
+	text_layer_set_text_alignment(text_layer_battery, GTextAlignmentCenter);
 	text_layer_set_background_color(text_layer_battery, GColorClear);
 	text_layer_set_text_color(text_layer_battery, GColorWhite);
 	text_layer_set_font(text_layer_battery, font_square_20);
-//  	text_layer_set_text(text_layer_battery, "95%");
 	layer_add_child(window_get_root_layer(window), text_layer_get_layer(text_layer_battery));
 
 	
-	text_layer_temperature = text_layer_create(GRect(10, 143, 50, 20));
-	text_layer_set_text_alignment(text_layer_temperature, GTextAlignmentLeft);
+	text_layer_temperature = text_layer_create(GRect(0, 143, 72, 20));
+	text_layer_set_text_alignment(text_layer_temperature, GTextAlignmentCenter);
 	text_layer_set_background_color(text_layer_temperature, GColorClear);
 	text_layer_set_text_color(text_layer_temperature, GColorWhite);
 	text_layer_set_font(text_layer_temperature, font_square_20);
-//  	text_layer_set_text(text_layer_temperature, "45C");
 	layer_add_child(window_get_root_layer(window), text_layer_get_layer(text_layer_temperature));
 	
-	battery_bitmap = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_BATTERY_100);
-	battery_bitmap_layer = bitmap_layer_create(GRect(95, 128, 30, 14));
-	bitmap_layer_set_compositing_mode(battery_bitmap_layer, GCompOpSet);
-	bitmap_layer_set_bitmap(battery_bitmap_layer, battery_bitmap);
+	battery_bitmap_layer = bitmap_layer_create(GRect(93, 128, 30, 14));
 	layer_add_child(window_get_root_layer(window), bitmap_layer_get_layer(battery_bitmap_layer));
 	
-	temperature_bitmap = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_TEMP);
-	temperature_bitmap_layer = bitmap_layer_create(GRect(15, 127, 32, 16));
-	bitmap_layer_set_compositing_mode(temperature_bitmap_layer, GCompOpSet);
-	bitmap_layer_set_bitmap(temperature_bitmap_layer, temperature_bitmap);
+	temperature_bitmap_layer = bitmap_layer_create(GRect(20, 127, 32, 16));
 	layer_add_child(window_get_root_layer(window), bitmap_layer_get_layer(temperature_bitmap_layer));
+	
+	bt_bitmap_layer = bitmap_layer_create(GRect(120, 0, 24, 24));
+	bt_bitmap = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_BLUETOOTH_DISCONNECTED);
+	bitmap_layer_set_compositing_mode(bt_bitmap_layer, GCompOpSet);
+	bitmap_layer_set_bitmap(bt_bitmap_layer, bt_bitmap);
+	layer_add_child(window_get_root_layer(window), bitmap_layer_get_layer(bt_bitmap_layer));
+	
 	
 	window_set_background_color(window, GColorBlack);
 	window_stack_push(window, true);
@@ -283,6 +325,8 @@ void handle_deinit(void) {
 	text_layer_destroy(text_layer_battery);
 	bitmap_layer_destroy(battery_bitmap_layer);
 	bitmap_layer_destroy(temperature_bitmap_layer);
+	bitmap_layer_destroy(bt_bitmap_layer);
+
 	layer_destroy(arc_layer);
 	
 	fonts_unload_custom_font(font_square_20);
@@ -290,6 +334,7 @@ void handle_deinit(void) {
 
 	gbitmap_destroy(battery_bitmap);
 	gbitmap_destroy(temperature_bitmap);
+	gbitmap_destroy(bt_bitmap);
 	
 	window_destroy(window);
 }

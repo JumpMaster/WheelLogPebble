@@ -13,80 +13,87 @@
             "speed",
             "battery",
             "temperature",
-            "fan_state"
+            "fan_state",
+            "bt_state"
         ],
         "projectType": "native",
         "resources": {
             "media": [
                 {
-                    "file": "images/battery_icon_90",
-                    "name": "IMAGE_BATTERY_90",
+                    "file": "images/bluetooth-disconnected.png",
+                    "name": "IMAGE_BLUETOOTH_DISCONNECTED",
                     "targetPlatforms": null,
                     "type": "bitmap"
                 },
                 {
-                    "file": "images/battery_icon_80",
-                    "name": "IMAGE_BATTERY_80",
-                    "targetPlatforms": null,
-                    "type": "bitmap"
-                },
-                {
-                    "file": "images/battery_icon_60",
-                    "name": "IMAGE_BATTERY_60",
-                    "targetPlatforms": null,
-                    "type": "bitmap"
-                },
-                {
-                    "file": "images/battery_icon_40",
-                    "name": "IMAGE_BATTERY_40",
-                    "targetPlatforms": null,
-                    "type": "bitmap"
-                },
-                {
-                    "file": "images/battery_icon_30",
-                    "name": "IMAGE_BATTERY_30",
-                    "targetPlatforms": null,
-                    "type": "bitmap"
-                },
-                {
-                    "file": "images/battery_icon_70",
-                    "name": "IMAGE_BATTERY_70",
-                    "targetPlatforms": null,
-                    "type": "bitmap"
-                },
-                {
-                    "file": "images/battery_icon_20",
-                    "name": "IMAGE_BATTERY_20",
-                    "targetPlatforms": null,
-                    "type": "bitmap"
-                },
-                {
-                    "file": "images/battery_icon_15",
-                    "name": "IMAGE_BATTERY_15",
-                    "targetPlatforms": null,
-                    "type": "bitmap"
-                },
-                {
-                    "file": "images/battery_icon_50",
-                    "name": "IMAGE_BATTERY_50",
-                    "targetPlatforms": null,
-                    "type": "bitmap"
-                },
-                {
-                    "file": "images/battery_icon_100",
-                    "name": "IMAGE_BATTERY_100",
-                    "targetPlatforms": null,
-                    "type": "bitmap"
-                },
-                {
-                    "file": "images/temperature_icon_red",
+                    "file": "images/temperature_icon_red.png",
                     "name": "IMAGE_TEMP_RED",
                     "targetPlatforms": null,
                     "type": "bitmap"
                 },
                 {
-                    "file": "images/temperature_icon",
+                    "file": "images/temperature_icon.png",
                     "name": "IMAGE_TEMP",
+                    "targetPlatforms": null,
+                    "type": "bitmap"
+                },
+                {
+                    "file": "images/battery_icon_90.png",
+                    "name": "IMAGE_BATTERY_90",
+                    "targetPlatforms": null,
+                    "type": "bitmap"
+                },
+                {
+                    "file": "images/battery_icon_80.png",
+                    "name": "IMAGE_BATTERY_80",
+                    "targetPlatforms": null,
+                    "type": "bitmap"
+                },
+                {
+                    "file": "images/battery_icon_70.png",
+                    "name": "IMAGE_BATTERY_70",
+                    "targetPlatforms": null,
+                    "type": "bitmap"
+                },
+                {
+                    "file": "images/battery_icon_60.png",
+                    "name": "IMAGE_BATTERY_60",
+                    "targetPlatforms": null,
+                    "type": "bitmap"
+                },
+                {
+                    "file": "images/battery_icon_50.png",
+                    "name": "IMAGE_BATTERY_50",
+                    "targetPlatforms": null,
+                    "type": "bitmap"
+                },
+                {
+                    "file": "images/battery_icon_40.png",
+                    "name": "IMAGE_BATTERY_40",
+                    "targetPlatforms": null,
+                    "type": "bitmap"
+                },
+                {
+                    "file": "images/battery_icon_30.png",
+                    "name": "IMAGE_BATTERY_30",
+                    "targetPlatforms": null,
+                    "type": "bitmap"
+                },
+                {
+                    "file": "images/battery_icon_20.png",
+                    "name": "IMAGE_BATTERY_20",
+                    "targetPlatforms": null,
+                    "type": "bitmap"
+                },
+                {
+                    "file": "images/battery_icon_15.png",
+                    "name": "IMAGE_BATTERY_15",
+                    "targetPlatforms": null,
+                    "type": "bitmap"
+                },
+                {
+                    "file": "images/battery_icon_100.png",
+                    "name": "IMAGE_BATTERY_100",
                     "targetPlatforms": null,
                     "type": "bitmap"
                 },
@@ -98,6 +105,7 @@
                     "type": "font"
                 },
                 {
+                    "characterRegex": "[0-9FCMKPH%/-]",
                     "file": "fonts/SF Square Head Bold.ttf",
                     "name": "FONT_SQUARE_20",
                     "targetPlatforms": null,
@@ -109,8 +117,7 @@
         "sdkVersion": "3",
         "targetPlatforms": [
             "aplite",
-            "basalt",
-            "chalk"
+            "basalt"
         ],
         "uuid": "185c8ae9-7e72-451a-a1c7-8f1e81df9a3d",
         "watchapp": {
