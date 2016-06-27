@@ -2,12 +2,12 @@
     "author": "JumpMaster",
     "dependencies": {},
     "keywords": [],
-    "name": "kingsongstats",
+    "name": "wheellog",
     "pebble": {
         "capabilities": [
             ""
         ],
-        "displayName": "KingSongStats",
+        "displayName": "WheelLog",
         "enableMultiJS": true,
         "messageKeys": [
             "speed",

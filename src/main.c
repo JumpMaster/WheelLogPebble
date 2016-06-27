@@ -38,8 +38,8 @@ int fan_state = 1;
 int bt_state = 1;
 
 int new_speed = 0;
-int new_battery = 99;
-int new_temperature = 20;
+int new_battery = 0;
+int new_temperature = 0;
 int new_fan_state = 0;
 int new_bt_state = 0;
 
@@ -50,10 +50,22 @@ char charTemperature[5] = "";
 static GFont font_square_50;
 static GFont font_square_20;
 
+int light_green_speed;
+int yellow_speed;
+int orange_speed;
+int red_speed;
+int max_speed;
 
 int32_t angle_start;
 int32_t angle_end;
 int32_t angle_speed;
+
+int32_t angle_increment;
+
+int light_green_angle;
+int yellow_angle;
+int orange_angle;
+int red_angle;
 
 int current_angle;
 int target_angle;
@@ -90,7 +102,7 @@ static void update_display() {
 		else if (has_vibrated && speed < vibrate_speed)
 			has_vibrated = false;
 
-		target_angle = ((speed*125)/100)+235;
+		target_angle = ((speed*angle_increment)/100)+235;
 
 		if (target_angle < 235)
 			target_angle = 235;
@@ -177,15 +189,15 @@ static void update_arcs(Layer *layer, GContext *ctx) {
 	inner_bounds.size.h -= 8;
 	inner_bounds.size.w -= 8;
 
-	if (current_angle >= 472) // 19
+	if (current_angle >= red_angle)
 		graphics_context_set_fill_color(ctx, GColorRed);
-	else if (current_angle >= 435) // 16
+	else if (current_angle >= orange_angle)
 		graphics_context_set_fill_color(ctx, GColorOrange);
-	else if (current_angle >= 397) // 13
+	else if (current_angle >= yellow_angle)
 		graphics_context_set_fill_color(ctx, GColorChromeYellow);
-	else if (current_angle >= 360) // 10
+	else if (current_angle >= light_green_angle) 
 		graphics_context_set_fill_color(ctx, GColorSpringBud);
-	else // below 10
+	else 
 		graphics_context_set_fill_color(ctx, GColorMediumSpringGreen);
 	
 	graphics_fill_radial(ctx, outer_bounds, GOvalScaleModeFitCircle, 10, angle_start, angle_speed);
@@ -224,7 +236,7 @@ static void received_handler(DictionaryIterator *iter, void *context) {
 }
 
 static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
-	new_speed += 5;
+	new_speed = speed+5;
 	update_display();
 }
 
@@ -234,8 +246,8 @@ static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
 }
 
 static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
-	if (new_speed > 5)
-		new_speed -= 5;
+	if (speed > 5)
+		new_speed = speed-5;
 	else
 		new_speed = 0;
 	
@@ -275,7 +287,7 @@ void handle_init(void) {
 	font_square_20 = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_SQUARE_20));
 	text_layer_set_font(text_layer_mph, font_square_20);
 	layer_add_child(window_get_root_layer(window), text_layer_get_layer(text_layer_mph));
- 	text_layer_set_text(text_layer_mph, "MPH");
+ 	text_layer_set_text(text_layer_mph, "KPH");
 	
 	text_layer_battery = text_layer_create(GRect(72, 143, 72, 20));
 	text_layer_set_text_alignment(text_layer_battery, GTextAlignmentCenter);
@@ -304,6 +316,18 @@ void handle_init(void) {
 	bitmap_layer_set_bitmap(bt_bitmap_layer, bt_bitmap);
 	layer_add_child(window_get_root_layer(window), bitmap_layer_get_layer(bt_bitmap_layer));
 	
+	max_speed = 20;
+	light_green_speed = 10;
+	yellow_speed = 13;
+	orange_speed = 16;
+	red_speed = 19;
+	
+	angle_increment = 2500/max_speed;
+	light_green_angle = ((light_green_speed*angle_increment)/10)+235; //10
+	yellow_angle = ((yellow_speed*angle_increment)/10)+235; //13
+	orange_angle = ((orange_speed*angle_increment)/10)+235; //16
+	red_angle = ((red_speed*angle_increment)/10)+235; //19
+
 	
 	window_set_background_color(window, GColorBlack);
 	window_stack_push(window, true);
