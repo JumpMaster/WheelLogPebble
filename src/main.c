@@ -25,7 +25,7 @@ static GBitmap *temperature_bitmap;
 static GBitmap *bt_bitmap;
 
 bool has_vibrated = false;
-int vibrate_speed = 200;
+int vibrate_speed;
 static VibePattern vibe = {
   		.durations = (uint32_t[]) { 300, 150, 300, 150, 500 },
 		.num_segments = 5,
@@ -70,6 +70,15 @@ int red_angle;
 int current_angle;
 int target_angle;
 
+static void send(int key, int value) {
+  DictionaryIterator *iter;
+  app_message_outbox_begin(&iter);
+
+  dict_write_int(iter, key, &value, sizeof(int), true);
+
+  app_message_outbox_send();
+}
+
 void refresh_arc_callback(void *data) {
 
 	int increment = 1;
@@ -94,7 +103,7 @@ static void update_display() {
 	if (new_speed != speed) {
 		speed = new_speed;
 		
-		if (!has_vibrated && speed >= vibrate_speed)
+		if (vibrate_speed > 0 && !has_vibrated && speed >= vibrate_speed)
 		{
 			has_vibrated = true;
 			vibes_enqueue_custom_pattern(vibe);
@@ -241,8 +250,13 @@ static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
 }
 
 static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
-	new_speed = 200;
+	new_speed = 250;
 	update_display();
+}
+
+static void long_select_click_handler(ClickRecognizerRef recognizer, void *context) {
+	// Lauch the Android companion app
+	send(0, 0);
 }
 
 static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
@@ -258,6 +272,8 @@ static void click_config_provider(void *context) {
 	window_single_click_subscribe(BUTTON_ID_UP, up_click_handler);
 	window_single_click_subscribe(BUTTON_ID_SELECT, select_click_handler);
 	window_single_click_subscribe(BUTTON_ID_DOWN, down_click_handler);
+	
+	window_long_click_subscribe(BUTTON_ID_SELECT, 1000, long_select_click_handler, NULL);
 }
 
 void handle_init(void) {
@@ -316,17 +332,21 @@ void handle_init(void) {
 	bitmap_layer_set_bitmap(bt_bitmap_layer, bt_bitmap);
 	layer_add_child(window_get_root_layer(window), bitmap_layer_get_layer(bt_bitmap_layer));
 	
-	max_speed = 20;
-	light_green_speed = 10;
-	yellow_speed = 13;
-	orange_speed = 16;
-	red_speed = 19;
+	// All speeds are in KPH
+	// To keep speeds as Integers that are
+	// times a factor of 10.  e.g. 24.5 KPH == 245
+	max_speed = 300;
+	light_green_speed = 150;
+	yellow_speed = 220;
+	orange_speed = 230;
+	red_speed = 240;
+	vibrate_speed = 250;
 	
-	angle_increment = 2500/max_speed;
-	light_green_angle = ((light_green_speed*angle_increment)/10)+235; //10
-	yellow_angle = ((yellow_speed*angle_increment)/10)+235; //13
-	orange_angle = ((orange_speed*angle_increment)/10)+235; //16
-	red_angle = ((red_speed*angle_increment)/10)+235; //19
+	angle_increment = 25000/max_speed;
+	light_green_angle = ((light_green_speed*angle_increment)/100)+235; //10
+	yellow_angle = ((yellow_speed*angle_increment)/100)+235; //13
+	orange_angle = ((orange_speed*angle_increment)/100)+235; //16
+	red_angle = ((red_speed*angle_increment)/100)+235; //19
 
 	
 	window_set_background_color(window, GColorBlack);
