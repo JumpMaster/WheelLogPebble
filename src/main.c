@@ -5,6 +5,7 @@
 #define KEY_TEMPERATURE  2
 #define KEY_FAN_STATE  3
 #define KEY_BT_STATE  4
+#define KEY_MAX_SPEED 5
 
 
 static Window *window;
@@ -25,10 +26,16 @@ static GBitmap *temperature_bitmap;
 static GBitmap *bt_bitmap;
 
 bool has_vibrated = false;
-int vibrate_speed;
+int vibe_speed;
 static VibePattern vibe = {
   		.durations = (uint32_t[]) { 300, 150, 300, 150, 500 },
 		.num_segments = 5,
+};
+
+// Persistant Storage Keys
+enum {
+	PS_MAX_SPEED,
+	PS_VIBE_SPEED,
 };
 
 int speed = 1;
@@ -103,12 +110,12 @@ static void update_display() {
 	if (new_speed != speed) {
 		speed = new_speed;
 		
-		if (vibrate_speed > 0 && !has_vibrated && speed >= vibrate_speed)
+		if (vibe_speed > 0 && !has_vibrated && speed >= vibe_speed)
 		{
 			has_vibrated = true;
 			vibes_enqueue_custom_pattern(vibe);
 		}
-		else if (has_vibrated && speed < vibrate_speed)
+		else if (has_vibrated && speed < vibe_speed)
 			has_vibrated = false;
 
 		target_angle = ((speed*angle_increment)/100)+235;
@@ -198,13 +205,13 @@ static void update_arcs(Layer *layer, GContext *ctx) {
 	inner_bounds.size.h -= 8;
 	inner_bounds.size.w -= 8;
 
-	if (current_angle >= red_angle)
+	if (current_angle > red_angle)
 		graphics_context_set_fill_color(ctx, GColorRed);
-	else if (current_angle >= orange_angle)
+	else if (current_angle > orange_angle)
 		graphics_context_set_fill_color(ctx, GColorOrange);
-	else if (current_angle >= yellow_angle)
+	else if (current_angle > yellow_angle)
 		graphics_context_set_fill_color(ctx, GColorChromeYellow);
-	else if (current_angle >= light_green_angle) 
+	else if (current_angle > light_green_angle) 
 		graphics_context_set_fill_color(ctx, GColorSpringBud);
 	else 
 		graphics_context_set_fill_color(ctx, GColorMediumSpringGreen);
@@ -218,13 +225,33 @@ static void update_arcs(Layer *layer, GContext *ctx) {
 		graphics_timer = app_timer_register(30, (AppTimerCallback) refresh_arc_callback, NULL);
 }
 
+void configure_display() {
+	// All speeds are in KPH
+	// To keep speeds as Integers they are
+	// multiplies by a factor of 10.  e.g. 24.5 KPH == 245
+	angle_increment = 25000/max_speed;
+	
+	light_green_speed = max_speed / 2;
+	yellow_speed = light_green_speed + (max_speed / 12)*2;
+	orange_speed = light_green_speed + (max_speed / 12)*4;
+	red_speed = light_green_speed + (max_speed / 12)*5;
+	
+	light_green_angle = ((light_green_speed*angle_increment)/100)+235; //10
+	yellow_angle = ((yellow_speed*angle_increment)/100)+235; //13
+	orange_angle = ((orange_speed*angle_increment)/100)+235; //16
+	red_angle = ((red_speed*angle_increment)/100)+235; //19
+}
+
 static void received_handler(DictionaryIterator *iter, void *context) {
+
 	Tuple *speed_tuple = dict_find(iter, KEY_SPEED);
 	Tuple *temperature_tuple = dict_find(iter, KEY_TEMPERATURE);
 	Tuple *battery_tuple = dict_find(iter, KEY_BATTERY);
 	Tuple *fan_state_tuple = dict_find(iter, KEY_FAN_STATE);
 	Tuple *bt_state_tuple = dict_find(iter, KEY_BT_STATE);
-	
+	Tuple *max_speed_tuple = dict_find(iter, MESSAGE_KEY_max_speed);
+	Tuple *vibe_speed_tuple = dict_find(iter, MESSAGE_KEY_vibe_speed);
+
 	if(speed_tuple)
 		new_speed = speed_tuple->value->int32;
 	
@@ -239,6 +266,19 @@ static void received_handler(DictionaryIterator *iter, void *context) {
 	
 	if (bt_state_tuple)
 		new_bt_state = bt_state_tuple->value->int32;
+	
+	if (max_speed_tuple) {
+		max_speed = max_speed_tuple->value->int32;
+		persist_write_int(PS_MAX_SPEED, max_speed);
+		new_speed = speed;
+		speed = 0;
+		configure_display();
+	}
+	
+	if (vibe_speed_tuple) {
+		vibe_speed = vibe_speed_tuple->value->int32;
+		persist_write_int(PS_VIBE_SPEED, vibe_speed);
+	}
 
 // 	APP_LOG(APP_LOG_LEVEL_INFO, "SPEED = %d", new_speed);
 	update_display();
@@ -274,6 +314,11 @@ static void click_config_provider(void *context) {
 	window_single_click_subscribe(BUTTON_ID_DOWN, down_click_handler);
 	
 	window_long_click_subscribe(BUTTON_ID_SELECT, 1000, long_select_click_handler, NULL);
+}
+
+void load_persistent_data() {
+	max_speed = persist_exists(PS_MAX_SPEED) ? persist_read_int(PS_MAX_SPEED) : 300;
+	vibe_speed = persist_exists(PS_VIBE_SPEED) ? persist_read_int(PS_VIBE_SPEED) : 280;
 }
 
 void handle_init(void) {
@@ -332,22 +377,8 @@ void handle_init(void) {
 	bitmap_layer_set_bitmap(bt_bitmap_layer, bt_bitmap);
 	layer_add_child(window_get_root_layer(window), bitmap_layer_get_layer(bt_bitmap_layer));
 	
-	// All speeds are in KPH
-	// To keep speeds as Integers that are
-	// times a factor of 10.  e.g. 24.5 KPH == 245
-	max_speed = 300;
-	light_green_speed = 150;
-	yellow_speed = 220;
-	orange_speed = 230;
-	red_speed = 240;
-	vibrate_speed = 250;
-	
-	angle_increment = 25000/max_speed;
-	light_green_angle = ((light_green_speed*angle_increment)/100)+235; //10
-	yellow_angle = ((yellow_speed*angle_increment)/100)+235; //13
-	orange_angle = ((orange_speed*angle_increment)/100)+235; //16
-	red_angle = ((red_speed*angle_increment)/100)+235; //19
-
+	load_persistent_data();
+	configure_display();
 	
 	window_set_background_color(window, GColorBlack);
 	window_stack_push(window, true);

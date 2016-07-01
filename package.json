@@ -1,11 +1,13 @@
 {
     "author": "JumpMaster",
-    "dependencies": {},
+    "dependencies": {
+        "pebble-clay": "^1.0.0 "
+    },
     "keywords": [],
     "name": "wheellog",
     "pebble": {
         "capabilities": [
-            ""
+            "configurable"
         ],
         "displayName": "WheelLog",
         "enableMultiJS": true,
@@ -14,7 +16,9 @@
             "battery",
             "temperature",
             "fan_state",
-            "bt_state"
+            "bt_state",
+            "max_speed",
+            "vibe_speed"
         ],
         "projectType": "native",
         "resources": {
