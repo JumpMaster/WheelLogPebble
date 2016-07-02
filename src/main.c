@@ -10,6 +10,7 @@
 
 static Window *window;
 
+static TextLayer *text_layer_time;
 static TextLayer *text_layer_speed;
 static TextLayer *text_layer_mph;
 static TextLayer *text_layer_battery;
@@ -56,6 +57,7 @@ char charTemperature[5] = "";
 
 static GFont font_square_50;
 static GFont font_square_20;
+static GFont font_square_15;
 
 int light_green_speed;
 int yellow_speed;
@@ -205,6 +207,7 @@ static void update_arcs(Layer *layer, GContext *ctx) {
 	inner_bounds.size.h -= 8;
 	inner_bounds.size.w -= 8;
 
+	#ifdef PBL_COLOR
 	if (current_angle > red_angle)
 		graphics_context_set_fill_color(ctx, GColorRed);
 	else if (current_angle > orange_angle)
@@ -213,12 +216,13 @@ static void update_arcs(Layer *layer, GContext *ctx) {
 		graphics_context_set_fill_color(ctx, GColorChromeYellow);
 	else if (current_angle > light_green_angle) 
 		graphics_context_set_fill_color(ctx, GColorSpringBud);
-	else 
-		graphics_context_set_fill_color(ctx, GColorMediumSpringGreen);
+	else
+	#endif
+		graphics_context_set_fill_color(ctx, COLOR_FALLBACK(GColorMediumSpringGreen, GColorWhite));
 	
 	graphics_fill_radial(ctx, outer_bounds, GOvalScaleModeFitCircle, 10, angle_start, angle_speed);
 	
-	graphics_context_set_fill_color(ctx, GColorLightGray);
+	graphics_context_set_fill_color(ctx, COLOR_FALLBACK(GColorLightGray, GColorWhite));
 	graphics_fill_radial(ctx, inner_bounds, GOvalScaleModeFitCircle, 2, angle_speed, angle_end);
 		
 	if (current_angle != target_angle)
@@ -316,6 +320,24 @@ static void click_config_provider(void *context) {
 	window_long_click_subscribe(BUTTON_ID_SELECT, 1000, long_select_click_handler, NULL);
 }
 
+static void update_time() {
+  // Get a tm structure
+  time_t temp = time(NULL);
+  struct tm *tick_time = localtime(&temp);
+
+  // Write the current hours and minutes into a buffer
+  static char s_buffer[8];
+  strftime(s_buffer, sizeof(s_buffer), clock_is_24h_style() ?
+                                          "%H:%M" : "%I:%M", tick_time);
+
+  // Display this time on the TextLayer
+  text_layer_set_text(text_layer_time, s_buffer);
+}
+
+static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
+	update_time();
+}
+
 void load_persistent_data() {
 	max_speed = persist_exists(PS_MAX_SPEED) ? persist_read_int(PS_MAX_SPEED) : 300;
 	vibe_speed = persist_exists(PS_VIBE_SPEED) ? persist_read_int(PS_VIBE_SPEED) : 280;
@@ -326,26 +348,35 @@ void handle_init(void) {
 	angle_end = DEG_TO_TRIGANGLE(485);
 	angle_speed = angle_start;
 	current_angle = 235;
+
+	font_square_50 = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_SQUARE_50));
+	font_square_20 = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_SQUARE_20));
+	font_square_15 = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_SQUARE_15));
 	
 	window = window_create();
+	
+	text_layer_time = text_layer_create(GRect(0, 0, 144, 50));
+	text_layer_set_text_alignment(text_layer_time, GTextAlignmentCenter);
+	text_layer_set_background_color(text_layer_time, GColorClear);
+	text_layer_set_text_color(text_layer_time, GColorWhite);
+	text_layer_set_font(text_layer_time, font_square_15);
+	layer_add_child(window_get_root_layer(window), text_layer_get_layer(text_layer_time));
 
-	arc_layer = layer_create(GRect(10, 5, 124, 124));
+	arc_layer = layer_create(GRect(10, 22, 124, 124));
 	layer_add_child(window_get_root_layer(window), arc_layer);
 	layer_set_update_proc(arc_layer, update_arcs);
 	
-	text_layer_speed = text_layer_create(GRect(0, 35, 144, 50));
+	text_layer_speed = text_layer_create(GRect(0, 45, 144, 50));
 	text_layer_set_text_alignment(text_layer_speed, GTextAlignmentCenter);
 	text_layer_set_background_color(text_layer_speed, GColorClear);
 	text_layer_set_text_color(text_layer_speed, GColorWhite);
-	font_square_50 = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_SQUARE_50));
 	text_layer_set_font(text_layer_speed, font_square_50);
 	layer_add_child(window_get_root_layer(window), text_layer_get_layer(text_layer_speed));
 
-	text_layer_mph = text_layer_create(GRect(0, 85, 144, 20));
+	text_layer_mph = text_layer_create(GRect(0, 97, 144, 20));
 	text_layer_set_text_alignment(text_layer_mph, GTextAlignmentCenter);
 	text_layer_set_background_color(text_layer_mph, GColorClear);
 	text_layer_set_text_color(text_layer_mph, GColorWhite);
-	font_square_20 = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_SQUARE_20));
 	text_layer_set_font(text_layer_mph, font_square_20);
 	layer_add_child(window_get_root_layer(window), text_layer_get_layer(text_layer_mph));
  	text_layer_set_text(text_layer_mph, "KPH");
@@ -391,9 +422,13 @@ void handle_init(void) {
 	app_message_register_inbox_received(received_handler);
 	
 	update_display();
+	update_time();
+	tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
 }
 
 void handle_deinit(void) {
+	tick_timer_service_unsubscribe();
+	text_layer_destroy(text_layer_time);
 	text_layer_destroy(text_layer_speed);
 	text_layer_destroy(text_layer_mph);
 	text_layer_destroy(text_layer_temperature);

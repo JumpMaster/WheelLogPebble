@@ -102,10 +102,11 @@
                     "type": "bitmap"
                 },
                 {
-                    "characterRegex": "[0-9]",
+                    "characterRegex": "[0-9:]",
                     "file": "fonts/SF Square Head Bold.ttf",
-                    "name": "FONT_SQUARE_50",
+                    "name": "FONT_SQUARE_15",
                     "targetPlatforms": null,
+                    "trackingAdjust": 2,
                     "type": "font"
                 },
                 {
@@ -114,6 +115,13 @@
                     "name": "FONT_SQUARE_20",
                     "targetPlatforms": null,
                     "trackingAdjust": 1,
+                    "type": "font"
+                },
+                {
+                    "characterRegex": "[0-9]",
+                    "file": "fonts/SF Square Head Bold.ttf",
+                    "name": "FONT_SQUARE_50",
+                    "targetPlatforms": null,
                     "type": "font"
                 }
             ]
