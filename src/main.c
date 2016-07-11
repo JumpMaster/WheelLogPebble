@@ -7,6 +7,7 @@
 #define KEY_BT_STATE  4
 #define KEY_MAX_SPEED 5
 
+static bool DEBUG = false;
 
 static Window *window;
 
@@ -37,6 +38,7 @@ static VibePattern vibe = {
 enum {
 	PS_MAX_SPEED,
 	PS_VIBE_SPEED,
+	PS_USE_ONBOARD_HORN
 };
 
 int speed = 1;
@@ -64,6 +66,7 @@ int yellow_speed;
 int orange_speed;
 int red_speed;
 int max_speed;
+bool use_onboard_horn;
 
 int32_t angle_start;
 int32_t angle_end;
@@ -232,7 +235,7 @@ static void update_arcs(Layer *layer, GContext *ctx) {
 void configure_display() {
 	// All speeds are in KPH
 	// To keep speeds as Integers they are
-	// multiplies by a factor of 10.  e.g. 24.5 KPH == 245
+	// multiplied by a factor of 10.  e.g. 24.5 KPH == 245
 	angle_increment = 25000/max_speed;
 	
 	light_green_speed = max_speed / 2;
@@ -255,6 +258,7 @@ static void received_handler(DictionaryIterator *iter, void *context) {
 	Tuple *bt_state_tuple = dict_find(iter, KEY_BT_STATE);
 	Tuple *max_speed_tuple = dict_find(iter, MESSAGE_KEY_max_speed);
 	Tuple *vibe_speed_tuple = dict_find(iter, MESSAGE_KEY_vibe_speed);
+	Tuple *use_onboard_horn_tuple = dict_find(iter, MESSAGE_KEY_use_onboard_horn);
 
 	if(speed_tuple)
 		new_speed = speed_tuple->value->int32;
@@ -283,33 +287,48 @@ static void received_handler(DictionaryIterator *iter, void *context) {
 		vibe_speed = vibe_speed_tuple->value->int32;
 		persist_write_int(PS_VIBE_SPEED, vibe_speed);
 	}
+	
+	if (use_onboard_horn_tuple) {
+		use_onboard_horn = use_onboard_horn_tuple->value->int32 == 1;
+		persist_write_bool(PS_USE_ONBOARD_HORN, use_onboard_horn);
+	}
 
-// 	APP_LOG(APP_LOG_LEVEL_INFO, "SPEED = %d", new_speed);
+	// 	APP_LOG(APP_LOG_LEVEL_INFO, "SPEED = %d", new_speed);
 	update_display();
 }
 
 static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
-	new_speed = speed+5;
-	update_display();
+	if (DEBUG) {
+		new_speed = speed+5;
+		update_display();
+		return;
+	}
 }
 
 static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
-	new_speed = 250;
-	update_display();
+	if (use_onboard_horn)
+		send(MESSAGE_KEY_play_horn, 0);
+	else {
+		send(MESSAGE_KEY_play_mp3_horn, 0);
+	}
 }
 
 static void long_select_click_handler(ClickRecognizerRef recognizer, void *context) {
 	// Lauch the Android companion app
-	send(0, 0);
+	send(MESSAGE_KEY_start_app, 0);
+	vibes_short_pulse();
 }
 
 static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
-	if (speed > 5)
-		new_speed = speed-5;
-	else
-		new_speed = 0;
-	
-	update_display();
+	if (DEBUG) {
+		if (speed > 5)
+			new_speed = speed-5;
+		else
+			new_speed = 0;
+
+		update_display();
+		return;
+	}
 }
 
 static void click_config_provider(void *context) {
@@ -341,6 +360,7 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
 void load_persistent_data() {
 	max_speed = persist_exists(PS_MAX_SPEED) ? persist_read_int(PS_MAX_SPEED) : 300;
 	vibe_speed = persist_exists(PS_VIBE_SPEED) ? persist_read_int(PS_VIBE_SPEED) : 280;
+	use_onboard_horn = persist_exists(PS_USE_ONBOARD_HORN) ? persist_read_bool(PS_USE_ONBOARD_HORN) : false;
 }
 
 void handle_init(void) {

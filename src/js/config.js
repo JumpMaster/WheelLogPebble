@@ -33,6 +33,12 @@ module.exports = [
 				"min": 0,
 				"max": 50,
 				"step": 0.5
+			},
+			{
+				"type": "toggle",
+				"messageKey": "use_onboard_horn",
+				"label": "Use Onboard Horn",
+				"description": "Use the onboard horn or via bluetooth audio?",
 			}
 		]
 	},

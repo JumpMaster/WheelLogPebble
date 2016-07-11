@@ -18,7 +18,11 @@
             "fan_state",
             "bt_state",
             "max_speed",
-            "vibe_speed"
+            "vibe_speed",
+            "use_onboard_horn",
+            "start_app",
+            "play_horn",
+            "play_mp3_horn"
         ],
         "projectType": "native",
         "resources": {
