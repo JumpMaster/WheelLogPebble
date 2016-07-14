@@ -35,8 +35,8 @@ int fan_state = 1;
 int bt_state = 1;
 
 int new_speed = 0;
-int new_battery = 50;
-int new_temperature = 30;
+int new_battery = 0;
+int new_temperature = 0;
 int new_fan_state = 0;
 int new_bt_state = 0;
 
@@ -45,6 +45,122 @@ char charBattery[5] = "";
 char charTemperature[5] = "";
 
 bool use_onboard_horn;
+
+AppTimer *graphics_timer;
+
+int light_green_speed;
+int yellow_speed;
+int orange_speed;
+int red_speed;
+
+int angle_start_deg;
+int angle_end_deg;
+int angle_current_deg;
+int angle_target_deg;
+
+int angle_light_green_deg;
+int angle_yellow_deg;
+int angle_orange_deg;
+int angle_red_deg;
+
+int32_t angle_start;
+int32_t angle_end;
+int32_t angle_current;
+int32_t angle_increment;
+
+TextLayer *text_layer_time;
+TextLayer *text_layer_speed;
+TextLayer *text_layer_mph;
+TextLayer *text_layer_battery;
+TextLayer *text_layer_temperature;
+
+BitmapLayer *battery_bitmap_layer;
+BitmapLayer *temperature_bitmap_layer;
+BitmapLayer *bt_bitmap_layer;
+
+Layer *arc_layer;
+
+GBitmap *battery_bitmap;
+GBitmap *temperature_bitmap;
+GBitmap *bt_bitmap;
+
+void refresh_arc_callback(void *data) {
+
+	int increment = 1;
+	
+	if (angle_current_deg < angle_target_deg && angle_target_deg-angle_current_deg >= 2) {
+		increment = (angle_target_deg-angle_current_deg) / 2;
+		angle_current_deg += increment > 8 ? 8 : increment;
+	} else if (angle_current_deg > angle_target_deg && angle_current_deg-angle_target_deg >= 2) {
+		increment = (angle_current_deg-angle_target_deg) / 2;
+		angle_current_deg -= increment > 8 ? 8 : increment;
+	} else {
+		angle_current_deg = angle_target_deg;
+	}
+
+	angle_current = DEG_TO_TRIGANGLE(angle_current_deg);
+	
+	layer_mark_dirty(arc_layer);
+}
+
+void update_arc(int speed) {
+  angle_target_deg = ((speed*angle_increment)/100)+angle_start_deg;
+
+		if (angle_target_deg < angle_start_deg)
+			angle_target_deg = angle_start_deg;
+		else if (angle_target_deg > angle_end_deg)
+			angle_target_deg = angle_end_deg;
+
+		refresh_arc_callback(NULL);
+}
+
+static void update_arcs(Layer *layer, GContext *ctx) {	
+	GRect inner_bounds = layer_get_bounds(layer);
+	GRect outer_bounds = layer_get_bounds(layer);
+	
+	inner_bounds.origin.x += 4;
+	inner_bounds.origin.y += 4;
+	inner_bounds.size.h -= 8;
+	inner_bounds.size.w -= 8;
+
+  #ifdef PBL_COLOR
+	if (angle_current_deg > angle_red_deg)
+		graphics_context_set_fill_color(ctx, GColorRed);
+	else if (angle_current_deg > angle_orange_deg)
+		graphics_context_set_fill_color(ctx, GColorOrange);
+	else if (angle_current_deg > angle_yellow_deg)
+		graphics_context_set_fill_color(ctx, GColorChromeYellow);
+	else if (angle_current_deg > angle_light_green_deg) 
+		graphics_context_set_fill_color(ctx, GColorSpringBud);
+	else
+	#endif
+		graphics_context_set_fill_color(ctx, COLOR_FALLBACK(GColorMediumSpringGreen, GColorWhite));
+	
+	graphics_fill_radial(ctx, outer_bounds, GOvalScaleModeFitCircle, 10, angle_start, angle_current);
+	
+	graphics_context_set_fill_color(ctx, COLOR_FALLBACK(GColorLightGray, GColorWhite));
+	graphics_fill_radial(ctx, inner_bounds, GOvalScaleModeFitCircle, 2, angle_current, angle_end);
+		
+	if (angle_current_deg != angle_target_deg)
+		graphics_timer = app_timer_register(30, (AppTimerCallback) refresh_arc_callback, NULL);
+}
+
+void update_angles(int max_speed) {
+	// All speeds are in KPH
+	// To keep speeds as Integers they are
+	// multiplied by a factor of 10.  e.g. 24.5 KPH == 245
+	angle_increment = ((angle_end_deg-angle_start_deg)*100)/max_speed;
+	
+	light_green_speed = max_speed / 2;
+	yellow_speed = light_green_speed + (max_speed / 12)*2;
+	orange_speed = light_green_speed + (max_speed / 12)*4;
+	red_speed = light_green_speed + (max_speed / 12)*5;
+	
+	angle_light_green_deg = ((light_green_speed*angle_increment)/100)+angle_start_deg;
+	angle_yellow_deg = ((yellow_speed*angle_increment)/100)+angle_start_deg;
+	angle_orange_deg = ((orange_speed*angle_increment)/100)+angle_start_deg;
+	angle_red_deg = ((red_speed*angle_increment)/100)+angle_start_deg;
+}
 
 static void send(int key, int value) {
   DictionaryIterator *iter;
@@ -71,7 +187,7 @@ static void update_display() {
 		snprintf(charSpeed, 3, "%02d", speed/10);
 		text_layer_set_text(text_layer_speed, charSpeed);
     
-    update_arc(speed);
+    	update_arc(speed);
 	}
 	
 	if (new_battery != battery) {
@@ -257,9 +373,56 @@ void handle_init(void) {
 	
 	window = window_create();
 
+	angle_start_deg = get_angle_start_deg();
+	angle_end_deg = get_angle_end_deg();
+	
+	angle_start = DEG_TO_TRIGANGLE(angle_start_deg);
+	angle_end = DEG_TO_TRIGANGLE(angle_end_deg);
+	angle_current = angle_start;
+	angle_current_deg = angle_start_deg;
+	
 	load_persistent_data();
-  update_angles(max_speed);
-	draw_display(window);
+	update_angles(max_speed);
+	
+	draw_display(&window, &text_layer_time, &text_layer_speed, &text_layer_mph, &text_layer_battery, &text_layer_temperature,
+				 &battery_bitmap_layer, &temperature_bitmap_layer, &bt_bitmap_layer, &arc_layer);
+	
+	text_layer_set_text_alignment(text_layer_time, GTextAlignmentCenter);
+	text_layer_set_background_color(text_layer_time, GColorClear);
+	text_layer_set_text_color(text_layer_time, GColorWhite);
+	
+	text_layer_set_text_alignment(text_layer_speed, GTextAlignmentCenter);
+	text_layer_set_background_color(text_layer_speed, GColorClear);
+	text_layer_set_text_color(text_layer_speed, GColorWhite);
+
+	text_layer_set_text_alignment(text_layer_mph, GTextAlignmentCenter);
+	text_layer_set_background_color(text_layer_mph, GColorClear);
+	text_layer_set_text_color(text_layer_mph, GColorWhite);
+ 	text_layer_set_text(text_layer_mph, "KPH");
+	
+	text_layer_set_text_alignment(text_layer_battery, GTextAlignmentCenter);
+	text_layer_set_background_color(text_layer_battery, GColorClear);
+	text_layer_set_text_color(text_layer_battery, GColorWhite);
+
+	text_layer_set_text_alignment(text_layer_temperature, GTextAlignmentCenter);
+	text_layer_set_background_color(text_layer_temperature, GColorClear);
+	text_layer_set_text_color(text_layer_temperature, GColorWhite);
+	
+	bt_bitmap = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_BLUETOOTH_DISCONNECTED);
+	bitmap_layer_set_compositing_mode(bt_bitmap_layer, GCompOpSet);
+	bitmap_layer_set_bitmap(bt_bitmap_layer, bt_bitmap);
+	
+	layer_set_update_proc(arc_layer, update_arcs);
+
+	layer_add_child(window_get_root_layer(window), text_layer_get_layer(text_layer_time));
+	layer_add_child(window_get_root_layer(window), arc_layer);
+	layer_add_child(window_get_root_layer(window), text_layer_get_layer(text_layer_speed));
+	layer_add_child(window_get_root_layer(window), text_layer_get_layer(text_layer_mph));
+	layer_add_child(window_get_root_layer(window), text_layer_get_layer(text_layer_battery));
+	layer_add_child(window_get_root_layer(window), text_layer_get_layer(text_layer_temperature));
+	layer_add_child(window_get_root_layer(window), bitmap_layer_get_layer(temperature_bitmap_layer));
+	layer_add_child(window_get_root_layer(window), bitmap_layer_get_layer(battery_bitmap_layer));
+	layer_add_child(window_get_root_layer(window), bitmap_layer_get_layer(bt_bitmap_layer));
 	
 	window_set_background_color(window, GColorBlack);
 	window_stack_push(window, true);
@@ -286,8 +449,8 @@ void handle_deinit(void) {
 	bitmap_layer_destroy(battery_bitmap_layer);
 	bitmap_layer_destroy(temperature_bitmap_layer);
 	bitmap_layer_destroy(bt_bitmap_layer);
-	
-  destroy_display();
+	layer_destroy(arc_layer);
+	destroy_display();
 
 	gbitmap_destroy(battery_bitmap);
 	gbitmap_destroy(temperature_bitmap);
