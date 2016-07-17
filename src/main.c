@@ -25,7 +25,7 @@ static VibePattern vibe = {
 enum {
 	PS_MAX_SPEED,
 	PS_VIBE_SPEED,
-	PS_USE_ONBOARD_HORN
+	PS_HORN_MODE
 };
 
 int speed = 1;
@@ -44,7 +44,7 @@ char charSpeed[3] = "";
 char charBattery[5] = "";
 char charTemperature[5] = "";
 
-bool use_onboard_horn;
+int horn_mode;
 
 AppTimer *graphics_timer;
 
@@ -264,7 +264,7 @@ static void received_handler(DictionaryIterator *iter, void *context) {
 	Tuple *bt_state_tuple = dict_find(iter, KEY_BT_STATE);
 	Tuple *max_speed_tuple = dict_find(iter, MESSAGE_KEY_max_speed);
 	Tuple *vibe_speed_tuple = dict_find(iter, MESSAGE_KEY_vibe_speed);
-	Tuple *use_onboard_horn_tuple = dict_find(iter, MESSAGE_KEY_use_onboard_horn);
+	Tuple *horn_mode_tuple = dict_find(iter, MESSAGE_KEY_horn_mode);
 
 	if(speed_tuple)
 		new_speed = speed_tuple->value->int32;
@@ -294,9 +294,9 @@ static void received_handler(DictionaryIterator *iter, void *context) {
 		persist_write_int(PS_VIBE_SPEED, vibe_speed);
 	}
 	
-	if (use_onboard_horn_tuple) {
-		use_onboard_horn = use_onboard_horn_tuple->value->int32 == 1;
-		persist_write_bool(PS_USE_ONBOARD_HORN, use_onboard_horn);
+	if (horn_mode_tuple) {
+		horn_mode = horn_mode_tuple->value->int32 - 48;
+		persist_write_int(PS_HORN_MODE, horn_mode);
 	}
 
 	// 	APP_LOG(APP_LOG_LEVEL_INFO, "SPEED = %d", new_speed);
@@ -312,9 +312,9 @@ static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
 }
 
 static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
-	if (use_onboard_horn)
+	if (horn_mode == 1)
 		send(MESSAGE_KEY_play_horn, 0);
-	else {
+	else if (horn_mode == 2) {
 		send(MESSAGE_KEY_play_mp3_horn, 0);
 	}
 }
@@ -366,7 +366,7 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
 void load_persistent_data() {
 	max_speed = persist_exists(PS_MAX_SPEED) ? persist_read_int(PS_MAX_SPEED) : 300;
 	vibe_speed = persist_exists(PS_VIBE_SPEED) ? persist_read_int(PS_VIBE_SPEED) : 280;
-	use_onboard_horn = persist_exists(PS_USE_ONBOARD_HORN) ? persist_read_bool(PS_USE_ONBOARD_HORN) : false;
+	horn_mode = persist_exists(PS_HORN_MODE) ? persist_read_int(PS_HORN_MODE) : 1;
 }
 
 void handle_init(void) {

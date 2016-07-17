@@ -35,10 +35,25 @@ module.exports = [
 				"step": 0.5
 			},
 			{
-				"type": "toggle",
-				"messageKey": "use_onboard_horn",
-				"label": "Use Onboard Horn",
-				"description": "Use the onboard horn or via bluetooth audio?",
+				"type": "select",
+				"messageKey": "horn_mode",
+				"label": "Horn Mode",
+				"description": "Onboard, via phone, or offUse the onboard horn or via bluetooth audio?",
+				"defaultValue": "On board",
+				"options": [
+					{ 
+						"label": "Off", 
+						"value": "0"
+					},
+					{ 
+						"label": "On board",
+						"value": "1"
+					},
+					{ 
+						"label": "Phone",
+						"value": "2"
+					}
+					]
 			}
 		]
 	},

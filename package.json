@@ -19,7 +19,7 @@
             "bt_state",
             "max_speed",
             "vibe_speed",
-            "use_onboard_horn",
+            "horn_mode",
             "start_app",
             "play_horn",
             "play_mp3_horn"
