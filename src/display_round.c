@@ -7,12 +7,17 @@ static GFont font_square_50;
 static GFont font_square_20;
 static GFont font_square_15;
 
-int get_angle_start_deg() {
-	return 0;
-}
+// int get_angle_start_deg() {
+// 	return 0;
+// }
 
-int get_angle_end_deg() {
-	return 360;
+// int get_angle_end_deg() {
+// 	return 360;
+// }
+
+void set_angles(int *start, int *end) {
+	*start = (int) 0;
+	*end = (int) 360;
 }
 
 void draw_display(Window **window, TextLayer **text_layer_time, TextLayer **text_layer_speed,

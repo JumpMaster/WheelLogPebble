@@ -1,7 +1,6 @@
 #include <pebble.h>
 
-int get_angle_start_deg();
-int get_angle_end_deg();
+void set_angles(int *start, int *end);
 
 void draw_display(Window **window, TextLayer **text_layer_time, TextLayer **text_layer_speed,
 	TextLayer **text_layer_mph, TextLayer **text_layer_battery, TextLayer **text_layer_temperature,

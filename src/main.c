@@ -8,7 +8,7 @@
 #define KEY_BT_STATE  4
 #define KEY_MAX_SPEED 5
 
-static bool DEBUG = true;
+static bool DEBUG = false;
 
 static Window *window;
 
@@ -25,7 +25,8 @@ static VibePattern vibe = {
 enum {
 	PS_MAX_SPEED,
 	PS_VIBE_SPEED,
-	PS_HORN_MODE
+	PS_HORN_MODE,
+	PS_SPEED_MPH
 };
 
 int speed = 1;
@@ -45,6 +46,7 @@ char charBattery[5] = "";
 char charTemperature[5] = "";
 
 int horn_mode;
+bool speed_mph;
 
 AppTimer *graphics_timer;
 
@@ -106,12 +108,12 @@ void refresh_arc_callback(void *data) {
 void update_arc(int speed) {
   angle_target_deg = ((speed*angle_increment)/100)+angle_start_deg;
 
-		if (angle_target_deg < angle_start_deg)
-			angle_target_deg = angle_start_deg;
-		else if (angle_target_deg > angle_end_deg)
-			angle_target_deg = angle_end_deg;
+	if (angle_target_deg < angle_start_deg)
+		angle_target_deg = angle_start_deg;
+	else if (angle_target_deg > angle_end_deg)
+		angle_target_deg = angle_end_deg;
 
-		refresh_arc_callback(NULL);
+	refresh_arc_callback(NULL);
 }
 
 static void update_arcs(Layer *layer, GContext *ctx) {	
@@ -184,18 +186,22 @@ static void update_display() {
 		else if (has_vibrated && speed < vibe_speed)
 			has_vibrated = false;
 
-		snprintf(charSpeed, 3, "%02d", speed/10);
+		if (speed_mph)
+			snprintf(charSpeed, 3, "%02d", (speed*1000)/16093); // Avoid floating point calculations on Pebble!
+		else
+			snprintf(charSpeed, 3, "%02d", speed/10);
+
 		text_layer_set_text(text_layer_speed, charSpeed);
-    
+
     	update_arc(speed);
 	}
-	
+
 	if (new_battery != battery) {
 		if (new_battery > 100)
 			new_battery = 100;
 		else if (new_battery < 0)
 			new_battery = 0;
-			
+
 		battery = new_battery;
 		snprintf(charBattery, 5, "%d%%", battery);
 		text_layer_set_text(text_layer_battery, charBattery);
@@ -265,6 +271,7 @@ static void received_handler(DictionaryIterator *iter, void *context) {
 	Tuple *max_speed_tuple = dict_find(iter, MESSAGE_KEY_max_speed);
 	Tuple *vibe_speed_tuple = dict_find(iter, MESSAGE_KEY_vibe_speed);
 	Tuple *horn_mode_tuple = dict_find(iter, MESSAGE_KEY_horn_mode);
+	Tuple *speed_mph_tuple = dict_find(iter, MESSAGE_KEY_speed_mph);
 
 	if(speed_tuple)
 		new_speed = speed_tuple->value->int32;
@@ -299,6 +306,16 @@ static void received_handler(DictionaryIterator *iter, void *context) {
 		persist_write_int(PS_HORN_MODE, horn_mode);
 	}
 
+	if (speed_mph_tuple) {
+		speed_mph = speed_mph_tuple->value->int32 == 1;
+		persist_write_bool(PS_SPEED_MPH, speed_mph);
+			
+		if (speed_mph)
+			text_layer_set_text(text_layer_mph, "MPH");
+		else
+			text_layer_set_text(text_layer_mph, "KPH");	
+	}
+	
 	// 	APP_LOG(APP_LOG_LEVEL_INFO, "SPEED = %d", new_speed);
 	update_display();
 }
@@ -367,14 +384,16 @@ void load_persistent_data() {
 	max_speed = persist_exists(PS_MAX_SPEED) ? persist_read_int(PS_MAX_SPEED) : 300;
 	vibe_speed = persist_exists(PS_VIBE_SPEED) ? persist_read_int(PS_VIBE_SPEED) : 280;
 	horn_mode = persist_exists(PS_HORN_MODE) ? persist_read_int(PS_HORN_MODE) : 1;
+	speed_mph = persist_exists(PS_SPEED_MPH) ? persist_read_bool(PS_SPEED_MPH) : false;
 }
 
 void handle_init(void) {
 	
 	window = window_create();
 
-	angle_start_deg = get_angle_start_deg();
-	angle_end_deg = get_angle_end_deg();
+// 	angle_start_deg = get_angle_start_deg();
+// 	angle_end_deg = get_angle_end_deg();
+	set_angles(&angle_start_deg, &angle_end_deg);
 	
 	angle_start = DEG_TO_TRIGANGLE(angle_start_deg);
 	angle_end = DEG_TO_TRIGANGLE(angle_end_deg);
@@ -398,7 +417,12 @@ void handle_init(void) {
 	text_layer_set_text_alignment(text_layer_mph, GTextAlignmentCenter);
 	text_layer_set_background_color(text_layer_mph, GColorClear);
 	text_layer_set_text_color(text_layer_mph, GColorWhite);
- 	text_layer_set_text(text_layer_mph, "KPH");
+	
+	if (speed_mph)
+ 		text_layer_set_text(text_layer_mph, "MPH");
+	else
+		text_layer_set_text(text_layer_mph, "KPH");
+
 	
 	text_layer_set_text_alignment(text_layer_battery, GTextAlignmentCenter);
 	text_layer_set_background_color(text_layer_battery, GColorClear);
@@ -411,7 +435,7 @@ void handle_init(void) {
 	bt_bitmap = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_BLUETOOTH_DISCONNECTED);
 	bitmap_layer_set_compositing_mode(bt_bitmap_layer, GCompOpSet);
 	bitmap_layer_set_bitmap(bt_bitmap_layer, bt_bitmap);
-	
+
 	layer_set_update_proc(arc_layer, update_arcs);
 
 	layer_add_child(window_get_root_layer(window), text_layer_get_layer(text_layer_time));

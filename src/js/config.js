@@ -35,6 +35,13 @@ module.exports = [
 				"step": 0.5
 			},
 			{
+				"type": "toggle",
+				"messageKey": "speed_mph",
+				"defaultValue": false,
+				"label": "Show Speed in MPH",
+				"description": "Show the speed in MPH rather than KPH",
+			},
+			{
 				"type": "select",
 				"messageKey": "horn_mode",
 				"label": "Horn Mode",
@@ -50,7 +57,7 @@ module.exports = [
 						"value": "1"
 					},
 					{ 
-						"label": "Phone",
+						"label": "Via Bluetooth Audio",
 						"value": "2"
 					}
 					]

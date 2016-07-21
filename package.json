@@ -22,7 +22,8 @@
             "horn_mode",
             "start_app",
             "play_horn",
-            "play_mp3_horn"
+            "play_mp3_horn",
+            "speed_mph"
         ],
         "projectType": "native",
         "resources": {
