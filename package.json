@@ -1,5 +1,5 @@
 {
-    "author": "JumpMaster",
+    "author": "Kevin Cooper",
     "dependencies": {
         "pebble-clay": "^1.0.0 "
     },
@@ -142,5 +142,5 @@
             "watchface": false
         }
     },
-    "version": "0.9.0"
+    "version": "1.0.0"
 }

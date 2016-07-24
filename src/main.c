@@ -35,11 +35,11 @@ int temperature = 1;
 int fan_state = 1;
 int bt_state = 1;
 
-int new_speed = 0;
-int new_battery = 0;
-int new_temperature = 0;
+int new_speed = 160;
+int new_battery = 85;
+int new_temperature = 25;
 int new_fan_state = 0;
-int new_bt_state = 0;
+int new_bt_state = 1;
 
 char charSpeed[3] = "";
 char charBattery[5] = "";
@@ -302,7 +302,10 @@ static void received_handler(DictionaryIterator *iter, void *context) {
 	}
 	
 	if (horn_mode_tuple) {
-		horn_mode = horn_mode_tuple->value->int32 - 48;
+		horn_mode = horn_mode_tuple->value->int32;
+		char *horn_mode_char = horn_mode_tuple->value->cstring;
+		horn_mode = (int) horn_mode_char[0]-'0';
+
 		persist_write_int(PS_HORN_MODE, horn_mode);
 	}
 
