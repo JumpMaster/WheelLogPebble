@@ -35,11 +35,11 @@ int temperature = 1;
 int fan_state = 1;
 int bt_state = 1;
 
-int new_speed = 160;
-int new_battery = 85;
-int new_temperature = 25;
+int new_speed = 0;
+int new_battery = 0;
+int new_temperature = 0;
 int new_fan_state = 0;
-int new_bt_state = 1;
+int new_bt_state = 0;
 
 char charSpeed[3] = "";
 char charBattery[5] = "";
