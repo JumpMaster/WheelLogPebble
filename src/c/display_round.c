@@ -1,7 +1,7 @@
 #if defined(PBL_ROUND)
 
 #include <pebble.h>
-#include <display.h>
+#include "display.h"
 
 static GFont font_square_50;
 static GFont font_square_20;

@@ -1,5 +1,5 @@
 #include <pebble.h>
-#include <display.h>
+#include "display.h"
 
 #define KEY_SPEED  0
 #define KEY_BATTERY  1
@@ -136,11 +136,11 @@ static void update_arcs(Layer *layer, GContext *ctx) {
 		graphics_context_set_fill_color(ctx, GColorSpringBud);
 	else
 	#endif
-		graphics_context_set_fill_color(ctx, COLOR_FALLBACK(GColorMediumSpringGreen, GColorWhite));
+	graphics_context_set_fill_color(ctx, COLOR_FALLBACK(GColorMediumSpringGreen, GColorWhite));
 	
 	graphics_fill_radial(ctx, outer_bounds, GOvalScaleModeFitCircle, 10, angle_start, angle_current);
 	
-	graphics_context_set_fill_color(ctx, COLOR_FALLBACK(GColorLightGray, GColorWhite));
+	graphics_context_set_fill_color(ctx, GColorLightGray);
 	graphics_fill_radial(ctx, inner_bounds, GOvalScaleModeFitCircle, 2, angle_current, angle_end);
 		
 	if (angle_current_deg != angle_target_deg)
