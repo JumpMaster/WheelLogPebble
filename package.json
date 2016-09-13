@@ -17,13 +17,13 @@
             "temperature",
             "fan_state",
             "bt_state",
-            "max_speed",
-            "vibe_speed",
-            "horn_mode",
+            "vibe_alert",
             "start_app",
             "play_horn",
             "play_mp3_horn",
-            "speed_mph"
+            "max_speed",
+            "horn_mode",
+            "speed_in_mph"
         ],
         "projectType": "native",
         "resources": {
@@ -143,5 +143,5 @@
             "watchface": false
         }
     },
-    "version": "1.2.0"
+    "version": "1.3.0"
 }

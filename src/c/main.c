@@ -6,19 +6,26 @@
 #define KEY_TEMPERATURE  2
 #define KEY_FAN_STATE  3
 #define KEY_BT_STATE  4
-#define KEY_MAX_SPEED 5
+#define KEY_VIBE_ALERT 5
 
 static bool DEBUG = false;
+
+static int ALARM_SPEED = 0;
+static int ALARM_CURRENT = 1;
 
 static Window *window;
 
 bool has_vibrated = false;
-int vibe_speed;
 int max_speed;
 
-static VibePattern vibe = {
+static VibePattern vibe_speed = {
   		.durations = (uint32_t[]) { 300, 150, 300, 150, 500 },
 		.num_segments = 5,
+};
+
+static VibePattern vibe_current = {
+  		.durations = (uint32_t[]) { 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100 },
+		.num_segments = 11,
 };
 
 // Persistant Storage Keys
@@ -135,7 +142,7 @@ static void update_arcs(Layer *layer, GContext *ctx) {
 	else if (angle_current_deg > angle_light_green_deg) 
 		graphics_context_set_fill_color(ctx, GColorSpringBud);
 	else
-	#endif
+  #endif
 	graphics_context_set_fill_color(ctx, COLOR_FALLBACK(GColorMediumSpringGreen, GColorWhite));
 	
 	graphics_fill_radial(ctx, outer_bounds, GOvalScaleModeFitCircle, 10, angle_start, angle_current);
@@ -149,7 +156,7 @@ static void update_arcs(Layer *layer, GContext *ctx) {
 
 void update_angles(int max_speed) {
 	// All speeds are in KPH
-	// To keep speeds as Integers they are
+	// To keep speeds as integers they are
 	// multiplied by a factor of 10.  e.g. 24.5 KPH == 245
 	angle_increment = ((angle_end_deg-angle_start_deg)*100)/max_speed;
 	
@@ -177,14 +184,6 @@ static void update_display() {
 	
 	if (new_speed != speed) {
 		speed = new_speed;
-		
-		if (vibe_speed > 0 && !has_vibrated && speed >= vibe_speed)
-		{
-			has_vibrated = true;
-			vibes_enqueue_custom_pattern(vibe);
-		}
-		else if (has_vibrated && speed < vibe_speed)
-			has_vibrated = false;
 
 		if (speed_mph)
 			snprintf(charSpeed, 3, "%02d", (speed*1000)/16093); // Avoid floating point calculations on Pebble!
@@ -261,17 +260,22 @@ static void update_display() {
 	}
 }
 
-static void received_handler(DictionaryIterator *iter, void *context) {
+static void received_handler(DictionaryIterator *iter, void *context) {	
+// 	Tuple *t = dict_read_first(iter);
+// 	int a = t->key;
+// 	int b = MESSAGE_KEY_vibe_alert;
+//     APP_LOG(APP_LOG_LEVEL_INFO, "Key is %d", a);
+// 	    APP_LOG(APP_LOG_LEVEL_INFO, "Expecting %d", b);
 
 	Tuple *speed_tuple = dict_find(iter, KEY_SPEED);
 	Tuple *temperature_tuple = dict_find(iter, KEY_TEMPERATURE);
 	Tuple *battery_tuple = dict_find(iter, KEY_BATTERY);
 	Tuple *fan_state_tuple = dict_find(iter, KEY_FAN_STATE);
 	Tuple *bt_state_tuple = dict_find(iter, KEY_BT_STATE);
+	Tuple *vibe_alert_tuple = dict_find(iter, KEY_VIBE_ALERT);
 	Tuple *max_speed_tuple = dict_find(iter, MESSAGE_KEY_max_speed);
-	Tuple *vibe_speed_tuple = dict_find(iter, MESSAGE_KEY_vibe_speed);
 	Tuple *horn_mode_tuple = dict_find(iter, MESSAGE_KEY_horn_mode);
-	Tuple *speed_mph_tuple = dict_find(iter, MESSAGE_KEY_speed_mph);
+	Tuple *speed_mph_tuple = dict_find(iter, MESSAGE_KEY_speed_in_mph);
 
 	if(speed_tuple)
 		new_speed = speed_tuple->value->int32;
@@ -296,11 +300,6 @@ static void received_handler(DictionaryIterator *iter, void *context) {
 		update_angles(max_speed);
 	}
 	
-	if (vibe_speed_tuple) {
-		vibe_speed = vibe_speed_tuple->value->int32;
-		persist_write_int(PS_VIBE_SPEED, vibe_speed);
-	}
-	
 	if (horn_mode_tuple) {
 		horn_mode = horn_mode_tuple->value->int32;
 		char *horn_mode_char = horn_mode_tuple->value->cstring;
@@ -312,14 +311,22 @@ static void received_handler(DictionaryIterator *iter, void *context) {
 	if (speed_mph_tuple) {
 		speed_mph = speed_mph_tuple->value->int32 == 1;
 		persist_write_bool(PS_SPEED_MPH, speed_mph);
-			
+
 		if (speed_mph)
 			text_layer_set_text(text_layer_mph, "MPH");
 		else
 			text_layer_set_text(text_layer_mph, "KPH");	
 	}
 	
-	// 	APP_LOG(APP_LOG_LEVEL_INFO, "SPEED = %d", new_speed);
+	if (vibe_alert_tuple) {
+		int vibe_type = vibe_alert_tuple->value->int32;
+
+		if (vibe_type == ALARM_SPEED) // Speed alarm
+			vibes_enqueue_custom_pattern(vibe_speed);
+		else if (vibe_type == ALARM_CURRENT) // Current Alarm
+			vibes_enqueue_custom_pattern(vibe_current);
+	}
+	
 	update_display();
 }
 
@@ -385,7 +392,6 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
 
 void load_persistent_data() {
 	max_speed = persist_exists(PS_MAX_SPEED) ? persist_read_int(PS_MAX_SPEED) : 300;
-	vibe_speed = persist_exists(PS_VIBE_SPEED) ? persist_read_int(PS_VIBE_SPEED) : 280;
 	horn_mode = persist_exists(PS_HORN_MODE) ? persist_read_int(PS_HORN_MODE) : 1;
 	speed_mph = persist_exists(PS_SPEED_MPH) ? persist_read_bool(PS_SPEED_MPH) : false;
 }
@@ -394,8 +400,6 @@ void handle_init(void) {
 	
 	window = window_create();
 
-// 	angle_start_deg = get_angle_start_deg();
-// 	angle_end_deg = get_angle_end_deg();
 	set_angles(&angle_start_deg, &angle_end_deg);
 	
 	angle_start = DEG_TO_TRIGANGLE(angle_start_deg);

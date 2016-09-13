@@ -25,18 +25,8 @@ module.exports = [
 				"step": 0.5
 			},
 			{
-				"type": "slider",
-				"messageKey": "vibe_speed",
-				"defaultValue": 28,
-				"label": "Vibrate Speed",
-				"description": "The speed which triggers the watch to vibrate. 0 is off.",
-				"min": 0,
-				"max": 50,
-				"step": 0.5
-			},
-			{
 				"type": "toggle",
-				"messageKey": "speed_mph",
+				"messageKey": "speed_in_mph",
 				"defaultValue": false,
 				"label": "Show Speed in MPH",
 				"description": "Show the speed in MPH rather than KPH",
