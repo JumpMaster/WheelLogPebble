@@ -18,12 +18,11 @@
             "fan_state",
             "bt_state",
             "vibe_alert",
+            "use_mph",
+            "max_speed",
             "start_app",
             "play_horn",
-            "play_mp3_horn",
-            "max_speed",
-            "horn_mode",
-            "speed_in_mph"
+            "ready"
         ],
         "projectType": "native",
         "resources": {

@@ -1,5 +1,7 @@
 #include <pebble.h>
 #include "display.h"
+#include "pebble_process_info.h"
+extern const PebbleProcessInfo __pbl_app_info;
 
 #define KEY_SPEED  0
 #define KEY_BATTERY  1
@@ -7,6 +9,8 @@
 #define KEY_FAN_STATE  3
 #define KEY_BT_STATE  4
 #define KEY_VIBE_ALERT 5
+#define KEY_USE_MPH 6
+#define KEY_MAX_SPEED 7
 
 static bool DEBUG = false;
 
@@ -19,21 +23,19 @@ bool has_vibrated = false;
 int max_speed;
 
 static VibePattern vibe_speed = {
-  		.durations = (uint32_t[]) { 300, 150, 300, 150, 500 },
-		.num_segments = 5,
+	.durations = (uint32_t[]) { 300, 150, 300, 150, 500 },
+	.num_segments = 5,
 };
 
 static VibePattern vibe_current = {
-  		.durations = (uint32_t[]) { 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100 },
-		.num_segments = 11,
+	.durations = (uint32_t[]) { 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100 },
+	.num_segments = 11,
 };
 
 // Persistant Storage Keys
 enum {
 	PS_MAX_SPEED,
-	PS_VIBE_SPEED,
-	PS_HORN_MODE,
-	PS_SPEED_MPH
+	PS_USE_MPH
 };
 
 int speed = 1;
@@ -52,8 +54,7 @@ char charSpeed[3] = "";
 char charBattery[5] = "";
 char charTemperature[5] = "";
 
-int horn_mode;
-bool speed_mph;
+bool use_mph;
 
 AppTimer *graphics_timer;
 
@@ -180,12 +181,17 @@ static void send(int key, int value) {
   app_message_outbox_send();
 }
 
+static void send_ready() {
+	int version = (__pbl_app_info.process_version.major * 100) + __pbl_app_info.process_version.minor;
+	send(MESSAGE_KEY_ready, version);
+}
+
 static void update_display() {
 	
 	if (new_speed != speed) {
 		speed = new_speed;
 
-		if (speed_mph)
+		if (use_mph)
 			snprintf(charSpeed, 3, "%02d", (speed*1000)/16093); // Avoid floating point calculations on Pebble!
 		else
 			snprintf(charSpeed, 3, "%02d", speed/10);
@@ -272,10 +278,9 @@ static void received_handler(DictionaryIterator *iter, void *context) {
 	Tuple *battery_tuple = dict_find(iter, KEY_BATTERY);
 	Tuple *fan_state_tuple = dict_find(iter, KEY_FAN_STATE);
 	Tuple *bt_state_tuple = dict_find(iter, KEY_BT_STATE);
+	Tuple *use_mph_tuple = dict_find(iter, KEY_USE_MPH);
+	Tuple *max_speed_tuple = dict_find(iter, KEY_MAX_SPEED);
 	Tuple *vibe_alert_tuple = dict_find(iter, KEY_VIBE_ALERT);
-	Tuple *max_speed_tuple = dict_find(iter, MESSAGE_KEY_max_speed);
-	Tuple *horn_mode_tuple = dict_find(iter, MESSAGE_KEY_horn_mode);
-	Tuple *speed_mph_tuple = dict_find(iter, MESSAGE_KEY_speed_in_mph);
 
 	if(speed_tuple)
 		new_speed = speed_tuple->value->int32;
@@ -293,26 +298,18 @@ static void received_handler(DictionaryIterator *iter, void *context) {
 		new_bt_state = bt_state_tuple->value->int32;
 	
 	if (max_speed_tuple) {
-		max_speed = max_speed_tuple->value->int32;
+		max_speed = max_speed_tuple->value->int32 * 10;
 		persist_write_int(PS_MAX_SPEED, max_speed);
 		new_speed = speed;
 		speed = 0;
 		update_angles(max_speed);
 	}
-	
-	if (horn_mode_tuple) {
-		horn_mode = horn_mode_tuple->value->int32;
-		char *horn_mode_char = horn_mode_tuple->value->cstring;
-		horn_mode = (int) horn_mode_char[0]-'0';
 
-		persist_write_int(PS_HORN_MODE, horn_mode);
-	}
+	if (use_mph_tuple) {
+		use_mph = use_mph_tuple->value->int32 == 1;
+		persist_write_bool(PS_USE_MPH, use_mph);
 
-	if (speed_mph_tuple) {
-		speed_mph = speed_mph_tuple->value->int32 == 1;
-		persist_write_bool(PS_SPEED_MPH, speed_mph);
-
-		if (speed_mph)
+		if (use_mph)
 			text_layer_set_text(text_layer_mph, "MPH");
 		else
 			text_layer_set_text(text_layer_mph, "KPH");	
@@ -339,11 +336,7 @@ static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
 }
 
 static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
-	if (horn_mode == 1)
-		send(MESSAGE_KEY_play_horn, 0);
-	else if (horn_mode == 2) {
-		send(MESSAGE_KEY_play_mp3_horn, 0);
-	}
+	send(MESSAGE_KEY_play_horn, 0);
 }
 
 static void long_select_click_handler(ClickRecognizerRef recognizer, void *context) {
@@ -392,8 +385,7 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
 
 void load_persistent_data() {
 	max_speed = persist_exists(PS_MAX_SPEED) ? persist_read_int(PS_MAX_SPEED) : 300;
-	horn_mode = persist_exists(PS_HORN_MODE) ? persist_read_int(PS_HORN_MODE) : 1;
-	speed_mph = persist_exists(PS_SPEED_MPH) ? persist_read_bool(PS_SPEED_MPH) : false;
+	use_mph = persist_exists(PS_USE_MPH) ? persist_read_bool(PS_USE_MPH) : false;
 }
 
 void handle_init(void) {
@@ -425,7 +417,7 @@ void handle_init(void) {
 	text_layer_set_background_color(text_layer_mph, GColorClear);
 	text_layer_set_text_color(text_layer_mph, GColorWhite);
 	
-	if (speed_mph)
+	if (use_mph)
  		text_layer_set_text(text_layer_mph, "MPH");
 	else
 		text_layer_set_text(text_layer_mph, "KPH");
@@ -467,6 +459,7 @@ void handle_init(void) {
 	
 	update_display();
 	update_time();
+	send_ready();
 	tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
 }
 
