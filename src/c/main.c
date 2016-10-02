@@ -15,8 +15,6 @@ static int KEY_RIDE_TIME = 8;
 static int KEY_DISTANCE = 9;
 static int KEY_TOP_SPEED = 10;
 
-//static bool DEBUG = false;
-
 static int ALARM_SPEED = 0;
 static int ALARM_CURRENT = 1;
 
@@ -264,8 +262,8 @@ static void send_ready() {
 	DictionaryIterator *iter;
 	app_message_outbox_begin(&iter);
 
+  dict_write_int(iter, MESSAGE_KEY_displayed_screen, &displayed_screen, sizeof(int), true);
 	dict_write_int(iter, MESSAGE_KEY_ready, &version, sizeof(int), true);
-	dict_write_int(iter, MESSAGE_KEY_displayed_screen, &displayed_screen, sizeof(int), true);
 
 	app_message_outbox_send();
 }

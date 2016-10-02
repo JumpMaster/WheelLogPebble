@@ -11,7 +11,6 @@ TextLayer *text_layer_rt_title;
 TextLayer *text_layer_d_title;
 TextLayer *text_layer_ts_title;
 
-
 void set_angles(int *start, int *end) {
 	*start = (int) 235;
 	*end = (int) 485;
@@ -69,8 +68,8 @@ void draw_display(Window **window, Layer **gui_layer, Layer **details_layer, Tex
 	text_layer_set_font(text_layer_rt_title, font_square_20);
 	text_layer_set_font(*text_layer_ride_time, font_square_20);
 	
-	text_layer_d_title = text_layer_create(GRect(0, 62, 144, 23));
-	*text_layer_distance = text_layer_create(GRect(0, 84, 144, 23));
+	text_layer_d_title = text_layer_create(GRect(0, 62, 144, 22));
+	*text_layer_distance = text_layer_create(GRect(0, 84, 144, 22));
 	text_layer_set_background_color(text_layer_d_title, GColorClear);
 	text_layer_set_background_color(*text_layer_distance, GColorClear);
 	text_layer_set_text_color(text_layer_d_title, GColorWhite);
@@ -81,8 +80,8 @@ void draw_display(Window **window, Layer **gui_layer, Layer **details_layer, Tex
 	text_layer_set_font(text_layer_d_title, font_square_20);
 	text_layer_set_font(*text_layer_distance, font_square_20);
 	
-	text_layer_ts_title = text_layer_create(GRect(0, 115, 144, 23));
-	*text_layer_top_speed = text_layer_create(GRect(0, 137, 144, 23));
+	text_layer_ts_title = text_layer_create(GRect(0, 115, 144, 22));
+	*text_layer_top_speed = text_layer_create(GRect(0, 137, 144, 22));
 	text_layer_set_background_color(text_layer_ts_title, GColorClear);
 	text_layer_set_background_color(*text_layer_top_speed, GColorClear);
 	text_layer_set_text_color(text_layer_ts_title, GColorWhite);
