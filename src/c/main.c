@@ -3,24 +3,28 @@
 #include "pebble_process_info.h"
 extern const PebbleProcessInfo __pbl_app_info;
 
-#define KEY_SPEED  0
-#define KEY_BATTERY  1
-#define KEY_TEMPERATURE  2
-#define KEY_FAN_STATE  3
-#define KEY_BT_STATE  4
-#define KEY_VIBE_ALERT 5
-#define KEY_USE_MPH 6
-#define KEY_MAX_SPEED 7
+static int KEY_SPEED = 0;
+static int KEY_BATTERY = 1;
+static int KEY_TEMPERATURE = 2;
+static int KEY_FAN_STATE = 3;
+static int KEY_BT_STATE = 4;
+static int KEY_VIBE_ALERT = 5;
+static int KEY_USE_MPH = 6;
+static int KEY_MAX_SPEED = 7;
+static int KEY_RIDE_TIME = 8;
+static int KEY_DISTANCE = 9;
+static int KEY_TOP_SPEED = 10;
 
-static bool DEBUG = false;
+//static bool DEBUG = false;
 
 static int ALARM_SPEED = 0;
 static int ALARM_CURRENT = 1;
 
 static Window *window;
-
-bool has_vibrated = false;
-int max_speed;
+static Layer *gui_layer;
+static Layer *details_layer;
+static Layer *incoming_layer;
+static Layer *outgoing_layer;
 
 static VibePattern vibe_speed = {
 	.durations = (uint32_t[]) { 300, 150, 300, 150, 500 },
@@ -43,20 +47,47 @@ int battery = 1;
 int temperature = 1;
 int fan_state = 1;
 int bt_state = 1;
+int ride_time = 1;
+int distance = 1;
+int top_speed = 1;
 
 int new_speed = 0;
 int new_battery = 0;
 int new_temperature = 0;
 int new_fan_state = 0;
 int new_bt_state = 0;
+int new_ride_time = 0;
+int new_distance = 0;
+int new_top_speed = 0;
 
 char charSpeed[3] = "";
 char charBattery[5] = "";
 char charTemperature[5] = "";
+char charRideTime[10] = "";
+char charDistance[10] = "";
+char charTopSpeed[10] = "";
 
+int max_speed;
 bool use_mph;
 
+enum screen {
+	gui,
+	details
+};
+
+enum direction {
+	up,
+	down
+};
+
 AppTimer *graphics_timer;
+AppTimer *transition_timer;
+
+int displayed_screen = gui;
+bool transitioning = false;
+int transition_direction;
+int incoming_screen;
+int outgoing_screen;
 
 int light_green_speed;
 int yellow_speed;
@@ -83,6 +114,9 @@ TextLayer *text_layer_speed;
 TextLayer *text_layer_mph;
 TextLayer *text_layer_battery;
 TextLayer *text_layer_temperature;
+TextLayer *text_layer_ride_time;
+TextLayer *text_layer_distance;
+TextLayer *text_layer_top_speed;
 
 BitmapLayer *battery_bitmap_layer;
 BitmapLayer *temperature_bitmap_layer;
@@ -93,6 +127,49 @@ Layer *arc_layer;
 GBitmap *battery_bitmap;
 GBitmap *temperature_bitmap;
 GBitmap *bt_bitmap;
+
+void transition_callback(void *data) {
+	
+	if (!transitioning)
+		transitioning = true;
+	
+	GRect incoming_bounds = layer_get_bounds(incoming_layer);
+	GRect outgoing_bounds = layer_get_bounds(outgoing_layer);
+	
+	if (transition_direction == up) {
+		int transition_speed = (-incoming_bounds.origin.y) / 10;
+		if (transition_speed <= 0)
+			transition_speed = 1;
+		if (incoming_bounds.origin.y + transition_speed >= 0 || transition_speed == 0) {
+			incoming_bounds.origin.y = 0;
+			outgoing_bounds.origin.y = 0 - outgoing_bounds.size.h+1;
+		} else {
+			incoming_bounds.origin.y += transition_speed;
+			outgoing_bounds.origin.y += transition_speed;
+		}
+	} else {
+				int transition_speed = incoming_bounds.origin.y / 10;
+		if (transition_speed <= 0)
+			transition_speed = 1;
+		if (incoming_bounds.origin.y - transition_speed <= 0) {
+			incoming_bounds.origin.y = 0;
+			outgoing_bounds.origin.y = 0 - outgoing_bounds.size.h;
+		} else {
+			incoming_bounds.origin.y -= transition_speed;
+			outgoing_bounds.origin.y -= transition_speed;
+		}
+	}
+	
+	layer_set_bounds(incoming_layer, incoming_bounds);
+	layer_set_bounds(outgoing_layer, outgoing_bounds);
+	
+	if (incoming_bounds.origin.y == 0) {
+		displayed_screen = incoming_screen;
+		transitioning = false;
+	} else
+		transition_timer = app_timer_register(30, (AppTimerCallback) transition_callback, NULL);
+}
+
 
 void refresh_arc_callback(void *data) {
 
@@ -183,7 +260,14 @@ static void send(int key, int value) {
 
 static void send_ready() {
 	int version = (__pbl_app_info.process_version.major * 100) + __pbl_app_info.process_version.minor;
-	send(MESSAGE_KEY_ready, version);
+	
+	DictionaryIterator *iter;
+	app_message_outbox_begin(&iter);
+
+	dict_write_int(iter, MESSAGE_KEY_ready, &version, sizeof(int), true);
+	dict_write_int(iter, MESSAGE_KEY_displayed_screen, &displayed_screen, sizeof(int), true);
+
+	app_message_outbox_send();
 }
 
 static void update_display() {
@@ -264,6 +348,30 @@ static void update_display() {
 		else
 			layer_set_hidden(bitmap_layer_get_layer(bt_bitmap_layer), false);
 	}
+	
+	if (new_ride_time != ride_time) {
+		ride_time = new_ride_time;
+		int seconds = ride_time;
+		int hours = seconds / (60 * 60);
+		seconds -= hours * (60 * 60);
+		int minutes = seconds / 60;
+		seconds -= minutes * 60;
+		
+		snprintf(charRideTime, 9, "%02d:%02d:%02d", hours, minutes, seconds);
+		text_layer_set_text(text_layer_ride_time, charRideTime);
+	}
+	
+	if (new_distance != distance) {
+		distance = new_distance;
+		snprintf(charDistance, 9, "%d.%d km", distance/10, distance%10);
+		text_layer_set_text(text_layer_distance, charDistance);
+	}
+	
+	if (new_top_speed != top_speed) {
+		top_speed = new_top_speed;
+		snprintf(charTopSpeed, 9, "%d.%d km/h", top_speed/10, top_speed%10);
+		text_layer_set_text(text_layer_top_speed, charTopSpeed);
+	}
 }
 
 static void received_handler(DictionaryIterator *iter, void *context) {	
@@ -281,8 +389,11 @@ static void received_handler(DictionaryIterator *iter, void *context) {
 	Tuple *use_mph_tuple = dict_find(iter, KEY_USE_MPH);
 	Tuple *max_speed_tuple = dict_find(iter, KEY_MAX_SPEED);
 	Tuple *vibe_alert_tuple = dict_find(iter, KEY_VIBE_ALERT);
+	Tuple *ride_time_tuple = dict_find(iter, KEY_RIDE_TIME);
+	Tuple *distance_tuple = dict_find(iter, KEY_DISTANCE);
+	Tuple *top_speed_tuple = dict_find(iter, KEY_TOP_SPEED);
 
-	if(speed_tuple)
+	if (speed_tuple)
 		new_speed = speed_tuple->value->int32;
 	
 	if (temperature_tuple)
@@ -312,7 +423,7 @@ static void received_handler(DictionaryIterator *iter, void *context) {
 		if (use_mph)
 			text_layer_set_text(text_layer_mph, "MPH");
 		else
-			text_layer_set_text(text_layer_mph, "KPH");	
+			text_layer_set_text(text_layer_mph, "km/h");	
 	}
 	
 	if (vibe_alert_tuple) {
@@ -324,15 +435,64 @@ static void received_handler(DictionaryIterator *iter, void *context) {
 			vibes_enqueue_custom_pattern(vibe_current);
 	}
 	
+	if (ride_time_tuple)
+		new_ride_time = ride_time_tuple->value->int32;
+	
+	if (distance_tuple)
+		new_distance = distance_tuple->value->int32;
+
+	if (top_speed_tuple)
+		new_top_speed = top_speed_tuple->value->int32;
+	
 	update_display();
 }
 
-static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
-	if (DEBUG) {
-		new_speed = speed+5;
-		update_display();
-		return;
+static void start_transition() {
+	if (!transitioning) {
+		Layer *layer;
+		if (displayed_screen == gui) {
+			layer = details_layer;
+		} else
+			layer = gui_layer;
+	
+		GRect layer_bounds = layer_get_bounds(layer);
+		
+		if (transition_direction == down)
+			layer_bounds.origin.y = layer_bounds.size.h+1;
+		else
+			layer_bounds.origin.y = 0 - layer_bounds.size.h;
+
+
+		layer_set_bounds(layer, layer_bounds);
+		
+		if (displayed_screen == gui) {
+			incoming_screen = details;
+			outgoing_screen = gui;
+			outgoing_layer = gui_layer;
+			incoming_layer = details_layer;
+		} else {
+			incoming_screen = gui;
+			outgoing_screen = details;
+			outgoing_layer = details_layer;
+			incoming_layer = gui_layer;
+		}
+		transition_callback(NULL);
+	} else {
+		Layer *temp_layer = outgoing_layer;
+		int temp = outgoing_screen;
+		outgoing_screen = incoming_screen;
+		incoming_screen = temp;
+		outgoing_layer = incoming_layer;
+		incoming_layer = temp_layer;
 	}
+	send(MESSAGE_KEY_displayed_screen, incoming_screen);
+}
+
+static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
+	if (transitioning && transition_direction == up)
+		return;
+	transition_direction = up;
+	start_transition();
 }
 
 static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
@@ -346,15 +506,10 @@ static void long_select_click_handler(ClickRecognizerRef recognizer, void *conte
 }
 
 static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
-	if (DEBUG) {
-		if (speed > 5)
-			new_speed = speed-5;
-		else
-			new_speed = 0;
-
-		update_display();
+	if (transitioning && transition_direction == down)
 		return;
-	}
+	transition_direction = down;
+	start_transition();
 }
 
 static void click_config_provider(void *context) {
@@ -391,6 +546,8 @@ void load_persistent_data() {
 void handle_init(void) {
 	
 	window = window_create();
+	Layer *window_layer = window_get_root_layer(window);
+	GRect window_bounds = layer_get_bounds(window_layer);
 
 	set_angles(&angle_start_deg, &angle_end_deg);
 	
@@ -402,8 +559,9 @@ void handle_init(void) {
 	load_persistent_data();
 	update_angles(max_speed);
 	
-	draw_display(&window, &text_layer_time, &text_layer_speed, &text_layer_mph, &text_layer_battery, &text_layer_temperature,
-				 &battery_bitmap_layer, &temperature_bitmap_layer, &bt_bitmap_layer, &arc_layer);
+	draw_display(&window, &gui_layer, &details_layer, &text_layer_time, &text_layer_speed, &text_layer_mph, &text_layer_battery, &text_layer_temperature,
+				 &battery_bitmap_layer, &temperature_bitmap_layer, &bt_bitmap_layer, &arc_layer,
+				 &text_layer_ride_time, &text_layer_distance, &text_layer_top_speed);
 	
 	text_layer_set_text_alignment(text_layer_time, GTextAlignmentCenter);
 	text_layer_set_background_color(text_layer_time, GColorClear);
@@ -420,7 +578,7 @@ void handle_init(void) {
 	if (use_mph)
  		text_layer_set_text(text_layer_mph, "MPH");
 	else
-		text_layer_set_text(text_layer_mph, "KPH");
+		text_layer_set_text(text_layer_mph, "km/h");
 
 	
 	text_layer_set_text_alignment(text_layer_battery, GTextAlignmentCenter);
@@ -437,15 +595,22 @@ void handle_init(void) {
 
 	layer_set_update_proc(arc_layer, update_arcs);
 
-	layer_add_child(window_get_root_layer(window), text_layer_get_layer(text_layer_time));
-	layer_add_child(window_get_root_layer(window), arc_layer);
-	layer_add_child(window_get_root_layer(window), text_layer_get_layer(text_layer_speed));
-	layer_add_child(window_get_root_layer(window), text_layer_get_layer(text_layer_mph));
-	layer_add_child(window_get_root_layer(window), text_layer_get_layer(text_layer_battery));
-	layer_add_child(window_get_root_layer(window), text_layer_get_layer(text_layer_temperature));
-	layer_add_child(window_get_root_layer(window), bitmap_layer_get_layer(temperature_bitmap_layer));
-	layer_add_child(window_get_root_layer(window), bitmap_layer_get_layer(battery_bitmap_layer));
-	layer_add_child(window_get_root_layer(window), bitmap_layer_get_layer(bt_bitmap_layer));
+	layer_add_child(gui_layer, text_layer_get_layer(text_layer_time));
+	layer_add_child(gui_layer, arc_layer);
+	layer_add_child(gui_layer, text_layer_get_layer(text_layer_speed));
+	layer_add_child(gui_layer, text_layer_get_layer(text_layer_mph));
+	layer_add_child(gui_layer, text_layer_get_layer(text_layer_battery));
+	layer_add_child(gui_layer, text_layer_get_layer(text_layer_temperature));
+	layer_add_child(gui_layer, bitmap_layer_get_layer(temperature_bitmap_layer));
+	layer_add_child(gui_layer, bitmap_layer_get_layer(battery_bitmap_layer));
+	layer_add_child(gui_layer, bitmap_layer_get_layer(bt_bitmap_layer));
+	layer_add_child(window_layer, gui_layer);
+	
+	GRect details_bounds = layer_get_bounds(details_layer);
+	details_bounds.origin.y -= window_bounds.size.h;
+	layer_set_bounds(details_layer, details_bounds);
+	
+	layer_add_child(window_layer, details_layer);
 	
 	window_set_background_color(window, GColorBlack);
 	window_stack_push(window, true);
@@ -470,10 +635,16 @@ void handle_deinit(void) {
 	text_layer_destroy(text_layer_mph);
 	text_layer_destroy(text_layer_temperature);
 	text_layer_destroy(text_layer_battery);
+	text_layer_destroy(text_layer_ride_time);
+	text_layer_destroy(text_layer_distance);
+	text_layer_destroy(text_layer_top_speed);
 	bitmap_layer_destroy(battery_bitmap_layer);
 	bitmap_layer_destroy(temperature_bitmap_layer);
 	bitmap_layer_destroy(bt_bitmap_layer);
 	layer_destroy(arc_layer);
+	layer_destroy(gui_layer);
+	layer_destroy(details_layer);
+	
 	destroy_display();
 
 	gbitmap_destroy(battery_bitmap);

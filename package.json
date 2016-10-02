@@ -6,9 +6,6 @@
     "keywords": [],
     "name": "wheellog",
     "pebble": {
-        "capabilities": [
-            "configurable"
-        ],
         "displayName": "WheelLog",
         "enableMultiJS": true,
         "messageKeys": [
@@ -20,9 +17,13 @@
             "vibe_alert",
             "use_mph",
             "max_speed",
+            "ride_time",
+            "distance",
+            "top_speed",
             "start_app",
             "play_horn",
-            "ready"
+            "ready",
+            "displayed_screen"
         ],
         "projectType": "native",
         "resources": {
@@ -106,15 +107,13 @@
                     "type": "bitmap"
                 },
                 {
-                    "characterRegex": "[0-9:]",
+                    "characterRegex": "[0-9]",
                     "file": "fonts/SF Square Head Bold.ttf",
-                    "name": "FONT_SQUARE_15",
+                    "name": "FONT_SQUARE_50",
                     "targetPlatforms": null,
-                    "trackingAdjust": 2,
                     "type": "font"
                 },
                 {
-                    "characterRegex": "[0-9FCMKPH%/-]",
                     "file": "fonts/SF Square Head Bold.ttf",
                     "name": "FONT_SQUARE_20",
                     "targetPlatforms": null,
@@ -122,10 +121,11 @@
                     "type": "font"
                 },
                 {
-                    "characterRegex": "[0-9]",
+                    "characterRegex": "[0-9:]",
                     "file": "fonts/SF Square Head Bold.ttf",
-                    "name": "FONT_SQUARE_50",
+                    "name": "FONT_SQUARE_15",
                     "targetPlatforms": null,
+                    "trackingAdjust": 2,
                     "type": "font"
                 }
             ]
@@ -142,5 +142,5 @@
             "watchface": false
         }
     },
-    "version": "1.3.0"
+    "version": "1.4.0"
 }
