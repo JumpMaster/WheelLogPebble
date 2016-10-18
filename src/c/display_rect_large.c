@@ -1,4 +1,4 @@
-#if defined(PBL_RECT) && PBL_DISPLAY_WIDTH == 144
+#if defined(PBL_RECT) && PBL_DISPLAY_WIDTH > 144
 
 #include <pebble.h>
 #include "display.h"
@@ -26,38 +26,38 @@ void draw_display(Window **window, Layer **gui_layer, Layer **details_layer, Tex
 	*gui_layer = layer_create(window_bounds);
 	*details_layer = layer_create(window_bounds);
 
-	font_square_l = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_SQUARE_50));
-	font_square_m = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_SQUARE_20));
-	font_square_s = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_SQUARE_15));
+	font_square_l = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_SQUARE_62));
+	font_square_m = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_SQUARE_25));
+	font_square_s = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_SQUARE_20));
   
-	*text_layer_time = text_layer_create(GRect(0, 0, window_bounds.size.w, 20));
+	*text_layer_time = text_layer_create(GRect(0, 0, window_bounds.size.w, 25));
 	text_layer_set_font(*text_layer_time, font_square_s);
 	
 	*bt_bitmap_layer = bitmap_layer_create(GRect(window_bounds.size.w-24, 5, 24, 24));
 	bitmap_layer_set_alignment(*bt_bitmap_layer, GAlignCenter);
 
-	*arc_layer = layer_create(GRect(10, 22, window_bounds.size.w-20, window_bounds.size.w-20));
+	*arc_layer = layer_create(GRect(10, 27, window_bounds.size.w-20, window_bounds.size.w-20));
 	
-	*text_layer_speed = text_layer_create(GRect(0, 45, window_bounds.size.w, 50));
+	*text_layer_speed = text_layer_create(GRect(0, 70, window_bounds.size.w, 62));
 	text_layer_set_font(*text_layer_speed, font_square_l);
 
-	*text_layer_mph = text_layer_create(GRect(0, 97, window_bounds.size.w, 23));
+	*text_layer_mph = text_layer_create(GRect(0, 130, window_bounds.size.w, 33));
 	text_layer_set_font(*text_layer_mph, font_square_m);
 	
-	*temperature_bitmap_layer = bitmap_layer_create(GRect(0, window_bounds.size.h-43, window_bounds.size.w/2, 20));
+	*temperature_bitmap_layer = bitmap_layer_create(GRect(0, window_bounds.size.h-53, window_bounds.size.w/2, 20));
 	bitmap_layer_set_alignment(*temperature_bitmap_layer, GAlignCenter);
 	
-	*battery_bitmap_layer = bitmap_layer_create(GRect(window_bounds.size.w/2, window_bounds.size.h-43, window_bounds.size.w/2, 20));
+	*battery_bitmap_layer = bitmap_layer_create(GRect(window_bounds.size.w/2, window_bounds.size.h-53, window_bounds.size.w/2, 20));
 	bitmap_layer_set_alignment(*battery_bitmap_layer, GAlignCenter);
 
-	*text_layer_temperature = text_layer_create(GRect(0, window_bounds.size.h-25, window_bounds.size.w/2, 25));
+	*text_layer_temperature = text_layer_create(GRect(0, window_bounds.size.h-32, window_bounds.size.w/2, 30));
 	text_layer_set_font(*text_layer_temperature, font_square_m);
 	
-	*text_layer_battery = text_layer_create(GRect(window_bounds.size.w/2, window_bounds.size.h-25, window_bounds.size.w/2, 25));
+	*text_layer_battery = text_layer_create(GRect(window_bounds.size.w/2, window_bounds.size.h-32, window_bounds.size.w/2, 30));
 	text_layer_set_font(*text_layer_battery, font_square_m);
 	
-	text_layer_rt_title = text_layer_create(GRect(0, 9, window_bounds.size.w, 22));
-	*text_layer_ride_time = text_layer_create(GRect(0, 31, window_bounds.size.w, 22));
+	text_layer_rt_title = text_layer_create(GRect(0, 18, window_bounds.size.w, 27));
+	*text_layer_ride_time = text_layer_create(GRect(0, 43, window_bounds.size.w, 27));
 	text_layer_set_background_color(text_layer_rt_title, GColorClear);
 	text_layer_set_background_color(*text_layer_ride_time, GColorClear);
 	text_layer_set_text_color(text_layer_rt_title, GColorWhite);
@@ -68,8 +68,8 @@ void draw_display(Window **window, Layer **gui_layer, Layer **details_layer, Tex
 	text_layer_set_font(text_layer_rt_title, font_square_m);
 	text_layer_set_font(*text_layer_ride_time, font_square_m);
 	
-	text_layer_d_title = text_layer_create(GRect(0, 62, window_bounds.size.w, 22));
-	*text_layer_distance = text_layer_create(GRect(0, 84, window_bounds.size.w, 22));
+	text_layer_d_title = text_layer_create(GRect(0, 88, window_bounds.size.w, 27));
+	*text_layer_distance = text_layer_create(GRect(0, 113, window_bounds.size.w, 27));
 	text_layer_set_background_color(text_layer_d_title, GColorClear);
 	text_layer_set_background_color(*text_layer_distance, GColorClear);
 	text_layer_set_text_color(text_layer_d_title, GColorWhite);
@@ -80,8 +80,8 @@ void draw_display(Window **window, Layer **gui_layer, Layer **details_layer, Tex
 	text_layer_set_font(text_layer_d_title, font_square_m);
 	text_layer_set_font(*text_layer_distance, font_square_m);
 	
-	text_layer_ts_title = text_layer_create(GRect(0, 115, window_bounds.size.w, 22));
-	*text_layer_top_speed = text_layer_create(GRect(0, 137, window_bounds.size.w, 23));
+	text_layer_ts_title = text_layer_create(GRect(0, 158, window_bounds.size.w, 27));
+	*text_layer_top_speed = text_layer_create(GRect(0, 183, window_bounds.size.w, 29));
 	text_layer_set_background_color(text_layer_ts_title, GColorClear);
 	text_layer_set_background_color(*text_layer_top_speed, GColorClear);
 	text_layer_set_text_color(text_layer_ts_title, GColorWhite);
@@ -98,7 +98,6 @@ void draw_display(Window **window, Layer **gui_layer, Layer **details_layer, Tex
 	layer_add_child(*details_layer, text_layer_get_layer(*text_layer_distance));
 	layer_add_child(*details_layer, text_layer_get_layer(text_layer_ts_title));
 	layer_add_child(*details_layer, text_layer_get_layer(*text_layer_top_speed));
-
 }
 
 void destroy_display() {
