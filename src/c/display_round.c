@@ -30,15 +30,15 @@ void draw_display(Window **window, Layer **gui_layer, Layer **details_layer, Tex
 	font_square_20 = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_SQUARE_20));
 	font_square_15 = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_SQUARE_15));
   
-	*text_layer_time = text_layer_create(GRect(0, 20, 180, 50));
+	*text_layer_time = text_layer_create(GRect(0, 20, window_bounds.size.w, 50));
 	text_layer_set_font(*text_layer_time, font_square_15);
 
 	*arc_layer = layer_create(layer_get_bounds(window_get_root_layer(*window)));
 	
-	*text_layer_speed = text_layer_create(GRect(0, 30, 180, 50));
+	*text_layer_speed = text_layer_create(GRect(0, 30, window_bounds.size.w, 50));
 	text_layer_set_font(*text_layer_speed, font_square_50);
 
-	*text_layer_mph = text_layer_create(GRect(0, 82, 180, 20));
+	*text_layer_mph = text_layer_create(GRect(0, 82, window_bounds.size.w, 20));
 	text_layer_set_font(*text_layer_mph, font_square_20);
 	
 	*text_layer_battery = text_layer_create(GRect(92, 105, 72, 20));
@@ -53,8 +53,8 @@ void draw_display(Window **window, Layer **gui_layer, Layer **details_layer, Tex
 	
 	*bt_bitmap_layer = bitmap_layer_create(GRect(130, 50, 24, 24));
 	
-	text_layer_rt_title = text_layer_create(GRect(0, 70, 180, 22));
-	*text_layer_ride_time = text_layer_create(GRect(0, 88, 180, 22));
+	text_layer_rt_title = text_layer_create(GRect(0, 70, window_bounds.size.w, 22));
+	*text_layer_ride_time = text_layer_create(GRect(0, 88, window_bounds.size.w, 22));
 	text_layer_set_background_color(text_layer_rt_title, GColorClear);
 	text_layer_set_background_color(*text_layer_ride_time, GColorClear);
 	text_layer_set_text_color(text_layer_rt_title, GColorWhite);
@@ -65,8 +65,8 @@ void draw_display(Window **window, Layer **gui_layer, Layer **details_layer, Tex
 	text_layer_set_font(text_layer_rt_title, font_square_20);
 	text_layer_set_font(*text_layer_ride_time, font_square_20);
 	
-	text_layer_d_title = text_layer_create(GRect(0, 26, 180, 22));
-	*text_layer_distance = text_layer_create(GRect(0, 44, 180, 22));
+	text_layer_d_title = text_layer_create(GRect(0, 26, window_bounds.size.w, 22));
+	*text_layer_distance = text_layer_create(GRect(0, 44, window_bounds.size.w, 22));
 	text_layer_set_background_color(text_layer_d_title, GColorClear);
 	text_layer_set_background_color(*text_layer_distance, GColorClear);
 	text_layer_set_text_color(text_layer_d_title, GColorWhite);
@@ -77,8 +77,8 @@ void draw_display(Window **window, Layer **gui_layer, Layer **details_layer, Tex
 	text_layer_set_font(text_layer_d_title, font_square_20);
 	text_layer_set_font(*text_layer_distance, font_square_20);
 	
-	text_layer_ts_title = text_layer_create(GRect(0, 114, 180, 22));
-	*text_layer_top_speed = text_layer_create(GRect(0, 132, 180, 22));
+	text_layer_ts_title = text_layer_create(GRect(0, 114, window_bounds.size.w, 22));
+	*text_layer_top_speed = text_layer_create(GRect(0, 132, window_bounds.size.w, 22));
 	text_layer_set_background_color(text_layer_ts_title, GColorClear);
 	text_layer_set_background_color(*text_layer_top_speed, GColorClear);
 	text_layer_set_text_color(text_layer_ts_title, GColorWhite);

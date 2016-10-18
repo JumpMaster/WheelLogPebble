@@ -14,6 +14,7 @@ static int KEY_MAX_SPEED = 7;
 static int KEY_RIDE_TIME = 8;
 static int KEY_DISTANCE = 9;
 static int KEY_TOP_SPEED = 10;
+static int KEY_READY = 11;
 
 static int ALARM_SPEED = 0;
 static int ALARM_CURRENT = 1;
@@ -23,6 +24,11 @@ static Layer *gui_layer;
 static Layer *details_layer;
 static Layer *incoming_layer;
 static Layer *outgoing_layer;
+
+static char unit_mph[4] = "mph";
+static char unit_kmh[5] = "km/h";
+static char unit_km[3] = "km";
+static char unit_mi[3] = "mi";
 
 static VibePattern vibe_speed = {
 	.durations = (uint32_t[]) { 300, 150, 300, 150, 500 },
@@ -61,8 +67,8 @@ int new_top_speed = 0;
 char charSpeed[3] = "";
 char charBattery[5] = "";
 char charTemperature[5] = "";
-char charRideTime[10] = "";
-char charDistance[10] = "";
+char charRideTime[9] = "";
+char charDistance[9] = "";
 char charTopSpeed[10] = "";
 
 int max_speed;
@@ -126,6 +132,10 @@ GBitmap *battery_bitmap;
 GBitmap *temperature_bitmap;
 GBitmap *bt_bitmap;
 
+int toMiles(int value) {
+	return (value*1000)/16093;
+}
+
 void transition_callback(void *data) {
 	
 	if (!transitioning)
@@ -146,9 +156,10 @@ void transition_callback(void *data) {
 			outgoing_bounds.origin.y += transition_speed;
 		}
 	} else {
-				int transition_speed = incoming_bounds.origin.y / 10;
+		int transition_speed = incoming_bounds.origin.y / 10;
 		if (transition_speed <= 0)
 			transition_speed = 1;
+		
 		if (incoming_bounds.origin.y - transition_speed <= 0) {
 			incoming_bounds.origin.y = 0;
 			outgoing_bounds.origin.y = 0 - outgoing_bounds.size.h;
@@ -258,14 +269,7 @@ static void send(int key, int value) {
 
 static void send_ready() {
 	int version = (__pbl_app_info.process_version.major * 100) + __pbl_app_info.process_version.minor;
-	
-	DictionaryIterator *iter;
-	app_message_outbox_begin(&iter);
-
-  dict_write_int(iter, MESSAGE_KEY_displayed_screen, &displayed_screen, sizeof(int), true);
-	dict_write_int(iter, MESSAGE_KEY_ready, &version, sizeof(int), true);
-
-	app_message_outbox_send();
+	send(KEY_READY, version);
 }
 
 static void update_display() {
@@ -274,7 +278,7 @@ static void update_display() {
 		speed = new_speed;
 
 		if (use_mph)
-			snprintf(charSpeed, 3, "%02d", (speed*1000)/16093); // Avoid floating point calculations on Pebble!
+			snprintf(charSpeed, 3, "%02d", toMiles(speed)); // Avoid floating point calculations on Pebble!
 		else
 			snprintf(charSpeed, 3, "%02d", speed/10);
 
@@ -361,13 +365,19 @@ static void update_display() {
 	
 	if (new_distance != distance) {
 		distance = new_distance;
-		snprintf(charDistance, 9, "%d.%d km", distance/10, distance%10);
+		int value = distance;
+		if (use_mph)
+			value = toMiles(value*10);
+		snprintf(charDistance, 9, "%d.%d %s", value/10, value%10, use_mph ? unit_mi : unit_km);
 		text_layer_set_text(text_layer_distance, charDistance);
 	}
 	
 	if (new_top_speed != top_speed) {
 		top_speed = new_top_speed;
-		snprintf(charTopSpeed, 9, "%d.%d km/h", top_speed/10, top_speed%10);
+		int value = top_speed;
+		if (use_mph)
+			value = toMiles(value*10);
+		snprintf(charTopSpeed, 10, "%d.%d %s", value/10, value%10, use_mph ? unit_mph : unit_kmh);
 		text_layer_set_text(text_layer_top_speed, charTopSpeed);
 	}
 }
@@ -390,6 +400,10 @@ static void received_handler(DictionaryIterator *iter, void *context) {
 	Tuple *ride_time_tuple = dict_find(iter, KEY_RIDE_TIME);
 	Tuple *distance_tuple = dict_find(iter, KEY_DISTANCE);
 	Tuple *top_speed_tuple = dict_find(iter, KEY_TOP_SPEED);
+	Tuple *ready_tuple = dict_find(iter, KEY_READY);
+	
+	if (ready_tuple)
+		send(MESSAGE_KEY_displayed_screen, displayed_screen);
 
 	if (speed_tuple)
 		new_speed = speed_tuple->value->int32;
@@ -418,10 +432,13 @@ static void received_handler(DictionaryIterator *iter, void *context) {
 		use_mph = use_mph_tuple->value->int32 == 1;
 		persist_write_bool(PS_USE_MPH, use_mph);
 
+		distance = -1;
+		top_speed = -1;
+
 		if (use_mph)
-			text_layer_set_text(text_layer_mph, "MPH");
+			text_layer_set_text(text_layer_mph, unit_mph);
 		else
-			text_layer_set_text(text_layer_mph, "km/h");	
+			text_layer_set_text(text_layer_mph, unit_kmh);	
 	}
 	
 	if (vibe_alert_tuple) {
@@ -574,9 +591,9 @@ void handle_init(void) {
 	text_layer_set_text_color(text_layer_mph, GColorWhite);
 	
 	if (use_mph)
- 		text_layer_set_text(text_layer_mph, "MPH");
+ 		text_layer_set_text(text_layer_mph, unit_mph);
 	else
-		text_layer_set_text(text_layer_mph, "km/h");
+		text_layer_set_text(text_layer_mph, unit_kmh);
 
 	
 	text_layer_set_text_alignment(text_layer_battery, GTextAlignmentCenter);
