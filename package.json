@@ -45,16 +45,33 @@
                     "type": "bitmap"
                 },
                 {
-                    "characterRegex": "[0-9:]",
                     "file": "fonts/SF Square Head Bold.ttf",
-                    "name": "FONT_SQUARE_15",
+                    "name": "FONT_SQUARE_25",
+                    "targetPlatforms": [
+                        "emery"
+                    ],
+                    "trackingAdjust": 2,
+                    "type": "font"
+                },
+                {
+                    "characterRegex": "[0-9]",
+                    "file": "fonts/SF Square Head Bold.ttf",
+                    "name": "FONT_SQUARE_62",
+                    "targetPlatforms": [
+                        "emery"
+                    ],
+                    "type": "font"
+                },
+                {
+                    "characterRegex": "[0-9]",
+                    "file": "fonts/SF Square Head Bold.ttf",
+                    "name": "FONT_SQUARE_50",
                     "targetPlatforms": [
                         "aplite",
                         "basalt",
                         "chalk",
                         "diorite"
                     ],
-                    "trackingAdjust": 2,
                     "type": "font"
                 },
                 {
@@ -71,31 +88,14 @@
                     "type": "font"
                 },
                 {
-                    "characterRegex": "[0-9]",
+                    "characterRegex": "[0-9:]",
                     "file": "fonts/SF Square Head Bold.ttf",
-                    "name": "FONT_SQUARE_50",
+                    "name": "FONT_SQUARE_15",
                     "targetPlatforms": [
                         "aplite",
                         "basalt",
                         "chalk",
                         "diorite"
-                    ],
-                    "type": "font"
-                },
-                {
-                    "characterRegex": "[0-9]",
-                    "file": "fonts/SF Square Head Bold.ttf",
-                    "name": "FONT_SQUARE_62",
-                    "targetPlatforms": [
-                        "emery"
-                    ],
-                    "type": "font"
-                },
-                {
-                    "file": "fonts/SF Square Head Bold.ttf",
-                    "name": "FONT_SQUARE_25",
-                    "targetPlatforms": [
-                        "emery"
                     ],
                     "trackingAdjust": 2,
                     "type": "font"

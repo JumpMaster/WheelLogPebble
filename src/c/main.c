@@ -213,11 +213,20 @@ void update_arc(int speed) {
 static void update_arcs(Layer *layer, GContext *ctx) {	
 	GRect inner_bounds = layer_get_bounds(layer);
 	GRect outer_bounds = layer_get_bounds(layer);
-	
-	inner_bounds.origin.x += 4;
-	inner_bounds.origin.y += 4;
-	inner_bounds.size.h -= 8;
-	inner_bounds.size.w -= 8;
+  
+  #if PBL_DISPLAY_WIDTH > 180
+	int outer_arc_thickness = 16;
+  #else
+	int outer_arc_thickness = 10;
+  #endif
+  
+  int inner_arc_thickness = outer_arc_thickness/5;
+  
+  int thickness_difference = outer_arc_thickness-inner_arc_thickness;
+	inner_bounds.origin.x += thickness_difference/2;
+	inner_bounds.origin.y += thickness_difference/2;
+	inner_bounds.size.h -= thickness_difference;
+	inner_bounds.size.w -= thickness_difference;
 
   #ifdef PBL_COLOR
 	if (angle_current_deg > angle_red_deg)
@@ -232,10 +241,10 @@ static void update_arcs(Layer *layer, GContext *ctx) {
   #endif
 	graphics_context_set_fill_color(ctx, COLOR_FALLBACK(GColorMediumSpringGreen, GColorWhite));
 	
-	graphics_fill_radial(ctx, outer_bounds, GOvalScaleModeFitCircle, 10, angle_start, angle_current);
+	graphics_fill_radial(ctx, outer_bounds, GOvalScaleModeFitCircle, outer_arc_thickness, angle_start, angle_current);
 	
 	graphics_context_set_fill_color(ctx, GColorLightGray);
-	graphics_fill_radial(ctx, inner_bounds, GOvalScaleModeFitCircle, 2, angle_current, angle_end);
+	graphics_fill_radial(ctx, inner_bounds, GOvalScaleModeFitCircle, inner_arc_thickness, angle_current, angle_end);
 		
 	if (angle_current_deg != angle_target_deg)
 		graphics_timer = app_timer_register(30, (AppTimerCallback) refresh_arc_callback, NULL);
