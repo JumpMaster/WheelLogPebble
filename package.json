@@ -27,8 +27,8 @@
         "resources": {
             "media": [
                 {
-                    "file": "images/bluetooth-disconnected.png",
-                    "name": "IMAGE_BLUETOOTH_DISCONNECTED",
+                    "file": "images/temperature_icon_red.png",
+                    "name": "IMAGE_TEMP_RED",
                     "targetPlatforms": null,
                     "type": "bitmap"
                 },
@@ -39,39 +39,82 @@
                     "type": "bitmap"
                 },
                 {
-                    "file": "images/temperature_icon_red.png",
-                    "name": "IMAGE_TEMP_RED",
+                    "file": "images/bluetooth-disconnected.png",
+                    "name": "IMAGE_BLUETOOTH_DISCONNECTED",
                     "targetPlatforms": null,
                     "type": "bitmap"
                 },
                 {
-                    "file": "fonts/SF Square Head Bold.ttf",
-                    "name": "FONT_SQUARE_25",
-                    "targetPlatforms": [
-                        "emery"
-                    ],
-                    "trackingAdjust": 2,
-                    "type": "font"
+                    "file": "images/battery_icon_90.png",
+                    "name": "IMAGE_BATTERY_90",
+                    "targetPlatforms": null,
+                    "type": "bitmap"
                 },
                 {
-                    "characterRegex": "[0-9]",
-                    "file": "fonts/SF Square Head Bold.ttf",
-                    "name": "FONT_SQUARE_62",
-                    "targetPlatforms": [
-                        "emery"
-                    ],
-                    "type": "font"
+                    "file": "images/battery_icon_80.png",
+                    "name": "IMAGE_BATTERY_80",
+                    "targetPlatforms": null,
+                    "type": "bitmap"
                 },
                 {
-                    "characterRegex": "[0-9]",
+                    "file": "images/battery_icon_70.png",
+                    "name": "IMAGE_BATTERY_70",
+                    "targetPlatforms": null,
+                    "type": "bitmap"
+                },
+                {
+                    "file": "images/battery_icon_60.png",
+                    "name": "IMAGE_BATTERY_60",
+                    "targetPlatforms": null,
+                    "type": "bitmap"
+                },
+                {
+                    "file": "images/battery_icon_50.png",
+                    "name": "IMAGE_BATTERY_50",
+                    "targetPlatforms": null,
+                    "type": "bitmap"
+                },
+                {
+                    "file": "images/battery_icon_40.png",
+                    "name": "IMAGE_BATTERY_40",
+                    "targetPlatforms": null,
+                    "type": "bitmap"
+                },
+                {
+                    "file": "images/battery_icon_30.png",
+                    "name": "IMAGE_BATTERY_30",
+                    "targetPlatforms": null,
+                    "type": "bitmap"
+                },
+                {
+                    "file": "images/battery_icon_20.png",
+                    "name": "IMAGE_BATTERY_20",
+                    "targetPlatforms": null,
+                    "type": "bitmap"
+                },
+                {
+                    "file": "images/battery_icon_15.png",
+                    "name": "IMAGE_BATTERY_15",
+                    "targetPlatforms": null,
+                    "type": "bitmap"
+                },
+                {
+                    "file": "images/battery_icon_100.png",
+                    "name": "IMAGE_BATTERY_100",
+                    "targetPlatforms": null,
+                    "type": "bitmap"
+                },
+                {
+                    "characterRegex": "[0-9:]",
                     "file": "fonts/SF Square Head Bold.ttf",
-                    "name": "FONT_SQUARE_50",
+                    "name": "FONT_SQUARE_15",
                     "targetPlatforms": [
                         "aplite",
                         "basalt",
                         "chalk",
                         "diorite"
                     ],
+                    "trackingAdjust": 2,
                     "type": "font"
                 },
                 {
@@ -88,77 +131,34 @@
                     "type": "font"
                 },
                 {
-                    "characterRegex": "[0-9:]",
+                    "characterRegex": "[0-9]",
                     "file": "fonts/SF Square Head Bold.ttf",
-                    "name": "FONT_SQUARE_15",
+                    "name": "FONT_SQUARE_50",
                     "targetPlatforms": [
                         "aplite",
                         "basalt",
                         "chalk",
                         "diorite"
                     ],
-                    "trackingAdjust": 2,
                     "type": "font"
                 },
                 {
-                    "file": "images/battery_icon_100.png",
-                    "name": "IMAGE_BATTERY_100",
-                    "targetPlatforms": null,
-                    "type": "bitmap"
+                    "characterRegex": "[0-9]",
+                    "file": "fonts/SF Square Head Bold.ttf",
+                    "name": "FONT_SQUARE_70",
+                    "targetPlatforms": [
+                        "emery"
+                    ],
+                    "type": "font"
                 },
                 {
-                    "file": "images/battery_icon_15.png",
-                    "name": "IMAGE_BATTERY_15",
-                    "targetPlatforms": null,
-                    "type": "bitmap"
-                },
-                {
-                    "file": "images/battery_icon_20.png",
-                    "name": "IMAGE_BATTERY_20",
-                    "targetPlatforms": null,
-                    "type": "bitmap"
-                },
-                {
-                    "file": "images/battery_icon_30.png",
-                    "name": "IMAGE_BATTERY_30",
-                    "targetPlatforms": null,
-                    "type": "bitmap"
-                },
-                {
-                    "file": "images/battery_icon_40.png",
-                    "name": "IMAGE_BATTERY_40",
-                    "targetPlatforms": null,
-                    "type": "bitmap"
-                },
-                {
-                    "file": "images/battery_icon_50.png",
-                    "name": "IMAGE_BATTERY_50",
-                    "targetPlatforms": null,
-                    "type": "bitmap"
-                },
-                {
-                    "file": "images/battery_icon_60.png",
-                    "name": "IMAGE_BATTERY_60",
-                    "targetPlatforms": null,
-                    "type": "bitmap"
-                },
-                {
-                    "file": "images/battery_icon_70.png",
-                    "name": "IMAGE_BATTERY_70",
-                    "targetPlatforms": null,
-                    "type": "bitmap"
-                },
-                {
-                    "file": "images/battery_icon_80.png",
-                    "name": "IMAGE_BATTERY_80",
-                    "targetPlatforms": null,
-                    "type": "bitmap"
-                },
-                {
-                    "file": "images/battery_icon_90.png",
-                    "name": "IMAGE_BATTERY_90",
-                    "targetPlatforms": null,
-                    "type": "bitmap"
+                    "file": "fonts/SF Square Head Bold.ttf",
+                    "name": "FONT_SQUARE_25",
+                    "targetPlatforms": [
+                        "emery"
+                    ],
+                    "trackingAdjust": 2,
+                    "type": "font"
                 }
             ]
         },
